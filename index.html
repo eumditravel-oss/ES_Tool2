@@ -1,54 +1,60 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ES 추정 산출기</title>
-  <link rel="stylesheet" href="styles.css"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>물가변동(ESC) 산출 자동화 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>물가변동(ESC) 산출 자동화 시스템</h1>
+            <p>국가/지방계약법 기준 지수조정율 임시 계산 및 엑셀 출력기</p>
+        </header>
 
-<div class="container">
-  <h1>ES 추정 산출기</h1>
+        <main>
+            <section class="input-section">
+                <h2>1. 기초 데이터 입력</h2>
+                <div class="form-group">
+                    <label for="contractName">공사명</label>
+                    <input type="text" id="contractName" value="OOOOOOOO 이전 신축 건축공사">
+                </div>
+                <div class="form-group">
+                    <label for="contractAmount">계약금액 (원)</label>
+                    <input type="number" id="contractAmount" value="435335108459">
+                </div>
+                <div class="form-group">
+                    <label for="baseDate">기준시점 (입찰일)</label>
+                    <input type="date" id="baseDate" value="2024-01-17">
+                </div>
+                <div class="form-group">
+                    <label for="compareDate">비교시점 (조정일)</label>
+                    <input type="date" id="compareDate" value="2025-09-01">
+                </div>
+                <div class="form-group">
+                    <label for="kValue">지수조정율 (K값, %)</label>
+                    <input type="number" step="0.0001" id="kValue" value="2.72">
+                </div>
+            </section>
 
-  <div class="card">
-    <h2>기초 입력</h2>
+            <section class="result-section">
+                <h2>2. 자동 계산 결과</h2>
+                <div class="result-card">
+                    <p>경과 일수: <strong id="resDays">0일</strong> <span id="reqDays" class="badge">판정중</span></p>
+                    <p>물가변동 등락율: <strong id="resK">0%</strong> <span id="reqK" class="badge">판정중</span></p>
+                    <p>조정 예정 금액: <strong id="resAmount" class="highlight-text">0 원</strong></p>
+                </div>
+            </section>
 
-    <label for="contractAmount">계약금액</label>
-    <input type="number" id="contractAmount" placeholder="예: 100000000" />
+            <section class="action-section">
+                <button id="downloadBtn" class="primary-btn">📥 "1.보고서" 엑셀 다운로드</button>
+            </section>
+        </main>
+    </div>
 
-    <label for="directCost">직접공사비</label>
-    <input type="number" id="directCost" placeholder="예: 70000000" />
-
-    <label for="indirectCost">간접공사비</label>
-    <input type="number" id="indirectCost" placeholder="예: 10000000" />
-
-    <label for="startIndex">착공시점 지수</label>
-    <input type="number" id="startIndex" placeholder="예: 110.5" step="0.01" />
-
-    <label for="currentIndex">변동시점 지수</label>
-    <input type="number" id="currentIndex" placeholder="예: 118.3" step="0.01" />
-
-    <button type="button" onclick="calculate()">계산하기</button>
-  </div>
-
-  <div class="card result">
-    <h2>결과</h2>
-
-    <div>지수변동률: <span id="rate">0.00%</span></div>
-    <div>K0: <span id="k0">0.0000</span></div>
-    <div>지수조정율: <span id="adjustRate">0.00%</span></div>
-    <div>조정금액: <span id="resultAmount">0 원</span></div>
-  </div>
-
-  <div class="card">
-    <h2>보고서 출력</h2>
-    <button type="button" onclick="exportToExcel()">Excel 결과보고서 저장</button>
-  </div>
-</div>
-
-<!-- SheetJS -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
