@@ -1,147 +1,157 @@
-let lastCalculatedData = null;
+// 1. DOM 요소 가져오기
+const inputs = {
+    contractName: document.getElementById('contractName'),
+    contractAmount: document.getElementById('contractAmount'),
+    baseDate: document.getElementById('baseDate'),
+    compareDate: document.getElementById('compareDate'),
+    kValue: document.getElementById('kValue')
+};
 
-function getInputValues() {
-  return {
-    contractAmount: Number(document.getElementById("contractAmount").value),
-    directCost: Number(document.getElementById("directCost").value),
-    indirectCost: Number(document.getElementById("indirectCost").value),
-    startIndex: Number(document.getElementById("startIndex").value),
-    currentIndex: Number(document.getElementById("currentIndex").value)
-  };
-}
+const results = {
+    resDays: document.getElementById('resDays'),
+    reqDays: document.getElementById('reqDays'),
+    resK: document.getElementById('resK'),
+    reqK: document.getElementById('reqK'),
+    resAmount: document.getElementById('resAmount')
+};
 
-function validateInputs(data) {
-  if (
-    !data.contractAmount ||
-    !data.startIndex ||
-    !data.currentIndex
-  ) {
-    alert("계약금액, 착공시점 지수, 변동시점 지수는 반드시 입력해야 합니다.");
-    return false;
-  }
+const downloadBtn = document.getElementById('downloadBtn');
 
-  if (data.contractAmount <= 0) {
-    alert("계약금액은 0보다 커야 합니다.");
-    return false;
-  }
+// 2. 현재 계산 상태 저장 객체
+let calcData = {};
 
-  if (data.startIndex <= 0 || data.currentIndex <= 0) {
-    alert("지수값은 0보다 커야 합니다.");
-    return false;
-  }
-
-  return true;
-}
-
-function calculateValues(data) {
-  const rate = (data.currentIndex - data.startIndex) / data.startIndex;
-  const k0 = (data.directCost + data.indirectCost) / data.contractAmount;
-  const adjustRate = rate * k0;
-  const resultAmount = data.contractAmount * adjustRate;
-
-  return {
-    ...data,
-    rate,
-    k0,
-    adjustRate,
-    resultAmount
-  };
-}
-
-function renderResult(result) {
-  document.getElementById("rate").innerText = (result.rate * 100).toFixed(2) + "%";
-  document.getElementById("k0").innerText = result.k0.toFixed(4);
-  document.getElementById("adjustRate").innerText = (result.adjustRate * 100).toFixed(2) + "%";
-  document.getElementById("resultAmount").innerText = result.resultAmount.toLocaleString("ko-KR") + " 원";
-}
-
+// 3. 자동 계산 함수 (요건 판정 및 금액 산출)
 function calculate() {
-  const inputData = getInputValues();
+    const amount = parseFloat(inputs.contractAmount.value) || 0;
+    const k = parseFloat(inputs.kValue.value) || 0;
+    const base = new Date(inputs.baseDate.value);
+    const compare = new Date(inputs.compareDate.value);
 
-  if (!validateInputs(inputData)) return;
+    // 날짜 차이 계산 (경과일수)
+    const diffTime = Math.abs(compare - base);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    // 조정금액 = 계약금액 * (K값 / 100) -> 엑셀 원가계산처럼 소수점 절사(Floor)
+    const adjustAmount = Math.floor(amount * (k / 100));
 
-  const result = calculateValues(inputData);
-  lastCalculatedData = result;
-  renderResult(result);
+    // 데이터 저장
+    calcData = {
+        name: inputs.contractName.value,
+        amount: amount,
+        baseDate: inputs.baseDate.value,
+        compareDate: inputs.compareDate.value,
+        k: k,
+        diffDays: diffDays,
+        adjustAmount: adjustAmount
+    };
+
+    updateUI();
 }
 
-function exportToExcel() {
-  if (!lastCalculatedData) {
-    const inputData = getInputValues();
-
-    if (!validateInputs(inputData)) return;
-
-    lastCalculatedData = calculateValues(inputData);
-    renderResult(lastCalculatedData);
-  }
-
-  const now = new Date();
-  const reportDate = formatDate(now);
-  const reportTime = formatTime(now);
-
-  const inputSheetData = [
-    ["ES 추정 산출기 결과보고서"],
-    [],
-    ["생성일자", reportDate],
-    ["생성시간", reportTime],
-    [],
-    ["항목", "값"],
-    ["계약금액", lastCalculatedData.contractAmount],
-    ["직접공사비", lastCalculatedData.directCost],
-    ["간접공사비", lastCalculatedData.indirectCost],
-    ["착공시점 지수", lastCalculatedData.startIndex],
-    ["변동시점 지수", lastCalculatedData.currentIndex]
-  ];
-
-  const resultSheetData = [
-    ["ES 산출 결과"],
-    [],
-    ["항목", "값"],
-    ["지수변동률", lastCalculatedData.rate],
-    ["K0", lastCalculatedData.k0],
-    ["지수조정율", lastCalculatedData.adjustRate],
-    ["조정금액", lastCalculatedData.resultAmount]
-  ];
-
-  const wsInput = XLSX.utils.aoa_to_sheet(inputSheetData);
-  const wsResult = XLSX.utils.aoa_to_sheet(resultSheetData);
-
-  wsInput["!cols"] = [{ wch: 20 }, { wch: 20 }];
-  wsResult["!cols"] = [{ wch: 20 }, { wch: 20 }];
-
-  applyNumberFormat(wsInput, ["B7", "B8", "B9"], "#,##0");
-  applyNumberFormat(wsInput, ["B10", "B11"], "0.00");
-
-  applyNumberFormat(wsResult, ["B4", "B6"], "0.00%");
-  applyNumberFormat(wsResult, ["B5"], "0.0000");
-  applyNumberFormat(wsResult, ["B7"], "#,##0");
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, wsInput, "기초입력");
-  XLSX.utils.book_append_sheet(workbook, wsResult, "산출결과");
-
-  const fileName = `ES_결과보고서_${reportDate.replace(/-/g, "")}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
-}
-
-function applyNumberFormat(worksheet, cellAddresses, format) {
-  cellAddresses.forEach((address) => {
-    if (worksheet[address]) {
-      worksheet[address].z = format;
+// 4. 화면 UI 업데이트 함수
+function updateUI() {
+    // 경과일수 요건 판정 (90일 이상)
+    results.resDays.textContent = `${calcData.diffDays}일`;
+    if (calcData.diffDays >= 90) {
+        results.reqDays.textContent = '✅ 충족 (90일 이상)';
+        results.reqDays.className = 'badge success';
+    } else {
+        results.reqDays.textContent = '❌ 미달 (90일 미만)';
+        results.reqDays.className = 'badge danger';
     }
-  });
+
+    // 등락율 요건 판정 (3% 이상)
+    results.resK.textContent = `${calcData.k.toFixed(2)}%`;
+    if (Math.abs(calcData.k) >= 3.0) {
+        results.reqK.textContent = '✅ 충족 (3% 이상)';
+        results.reqK.className = 'badge success';
+    } else {
+        results.reqK.textContent = '❌ 미달 (3% 미만)';
+        results.reqK.className = 'badge danger';
+    }
+
+    // 조정금액 표시
+    results.resAmount.textContent = `${calcData.adjustAmount.toLocaleString()} 원`;
 }
 
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+// 5. 입력창에 값이 바뀔 때마다 실시간 계산 실행
+Object.values(inputs).forEach(input => {
+    input.addEventListener('input', calculate);
+});
 
-function formatTime(date) {
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
-}
+// 초기 실행
+calculate();
+
+
+// 6. 엑셀 다운로드 로직 (ExcelJS 사용)
+downloadBtn.addEventListener('click', async () => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        
+        // ----------------------------------------
+        // 시트 1: 보고서 표지
+        // ----------------------------------------
+        const coverSheet = workbook.addWorksheet('표지');
+        coverSheet.getColumn('A').width = 80;
+        
+        const titleCell = coverSheet.getCell('A3');
+        titleCell.value = '물가변동으로 인한 계약금액 조정 보고서\n[ 1회ESC ]';
+        titleCell.font = { size: 24, bold: true };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        coverSheet.getRow(3).height = 100;
+
+        const nameCell = coverSheet.getCell('A10');
+        nameCell.value = `공사명 : ${calcData.name}`;
+        nameCell.font = { size: 16, bold: true };
+        nameCell.alignment = { horizontal: 'center' };
+        
+        const dateCell = coverSheet.getCell('A15');
+        const today = new Date();
+        dateCell.value = `${today.getFullYear()}년 ${today.getMonth() + 1}월`;
+        dateCell.alignment = { horizontal: 'center' };
+
+        // ----------------------------------------
+        // 시트 2: 붙임 1. 종합의견서
+        // ----------------------------------------
+        const sheet1 = workbook.addWorksheet('붙임1_종합의견서');
+        sheet1.getColumn('A').width = 25;
+        sheet1.getColumn('B').width = 40;
+        
+        sheet1.getCell('A1').value = '[ 붙임 1 ]';
+        sheet1.getCell('A2').value = '물가변동으로 인한 계약금액 조정에 대한 종합의견서';
+        sheet1.getCell('A2').font = { size: 16, bold: true };
+        
+        sheet1.getCell('A4').value = '1. 공사명:';
+        sheet1.getCell('B4').value = calcData.name;
+        
+        sheet1.getCell('A5').value = '2. 계약금액:';
+        sheet1.getCell('B5').value = calcData.amount;
+        sheet1.getCell('B5').numFmt = '#,##0" 원"';
+        
+        sheet1.getCell('A6').value = '3. 기준시점(입찰일):';
+        sheet1.getCell('B6').value = calcData.baseDate;
+
+        sheet1.getCell('A7').value = '4. 비교시점(조정일):';
+        sheet1.getCell('B7').value = calcData.compareDate;
+        
+        sheet1.getCell('A8').value = '5. 조정율 (K):';
+        sheet1.getCell('B8').value = calcData.k / 100;
+        sheet1.getCell('B8').numFmt = '0.0000%';
+        
+        sheet1.getCell('A9').value = '6. 조정 대상 금액:';
+        sheet1.getCell('B9').value = calcData.adjustAmount;
+        sheet1.getCell('B9').numFmt = '#,##0" 원"';
+        sheet1.getCell('B9').font = { bold: true, color: { argb: 'FFFF0000' } };
+
+        // ----------------------------------------
+        // 파일 생성 및 다운로드 (FileSaver.js)
+        // ----------------------------------------
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `1.보고서_ESC_${calcData.name}.xlsx`);
+
+    } catch (error) {
+        alert("엑셀 생성 중 오류가 발생했습니다.");
+        console.error(error);
+    }
+});
