@@ -9,48 +9,46 @@
 <body>
 
 <div class="container">
-
   <h1>ES 추정 산출기</h1>
 
-  <!-- 입력 영역 -->
   <div class="card">
     <h2>기초 입력</h2>
 
-    <label>계약금액</label>
-    <input type="number" id="contractAmount" />
+    <label for="contractAmount">계약금액</label>
+    <input type="number" id="contractAmount" placeholder="예: 100000000" />
 
-    <label>직접공사비</label>
-    <input type="number" id="directCost" />
+    <label for="directCost">직접공사비</label>
+    <input type="number" id="directCost" placeholder="예: 70000000" />
 
-    <label>간접공사비</label>
-    <input type="number" id="indirectCost" />
+    <label for="indirectCost">간접공사비</label>
+    <input type="number" id="indirectCost" placeholder="예: 10000000" />
 
-    <label>착공시점 지수</label>
-    <input type="number" id="startIndex" />
+    <label for="startIndex">착공시점 지수</label>
+    <input type="number" id="startIndex" placeholder="예: 110.5" step="0.01" />
 
-    <label>변동시점 지수</label>
-    <input type="number" id="currentIndex" />
+    <label for="currentIndex">변동시점 지수</label>
+    <input type="number" id="currentIndex" placeholder="예: 118.3" step="0.01" />
 
-    <button onclick="calculate()">계산하기</button>
+    <button type="button" onclick="calculate()">계산하기</button>
   </div>
 
-  <!-- 결과 -->
   <div class="card result">
     <h2>결과</h2>
 
-    <div>지수변동률: <span id="rate">0</span></div>
-    <div>K0: <span id="k0">0</span></div>
-    <div>지수조정율: <span id="adjustRate">0</span></div>
-    <div>조정금액: <span id="resultAmount">0</span></div>
+    <div>지수변동률: <span id="rate">0.00%</span></div>
+    <div>K0: <span id="k0">0.0000</span></div>
+    <div>지수조정율: <span id="adjustRate">0.00%</span></div>
+    <div>조정금액: <span id="resultAmount">0 원</span></div>
   </div>
 
-  <!-- 저장 -->
   <div class="card">
-    <button onclick="saveData()">JSON 저장</button>
+    <h2>보고서 출력</h2>
+    <button type="button" onclick="exportToExcel()">Excel 결과보고서 저장</button>
   </div>
-
 </div>
 
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
