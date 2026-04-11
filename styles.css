@@ -5,46 +5,58 @@ body {
 }
 
 .container {
-  max-width: 600px;
-  margin: auto;
+  max-width: 640px;
+  margin: 0 auto;
   padding: 20px;
 }
 
 h1 {
   text-align: center;
+  margin-bottom: 20px;
 }
 
 .card {
-  background: white;
+  background: #ffffff;
   padding: 20px;
-  margin-bottom: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 label {
   display: block;
-  margin-top: 10px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 input {
   width: 100%;
-  padding: 8px;
-  margin-top: 5px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 button {
-  margin-top: 15px;
+  margin-top: 16px;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   background: orange;
   border: none;
-  color: white;
-  font-weight: bold;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
   cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover {
+  opacity: 0.92;
 }
 
 .result div {
-  margin: 8px 0;
-  font-weight: bold;
+  margin: 10px 0;
+  font-weight: 700;
 }
