@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'ES_ADJUSTMENT_WEBAPP_V3';
+const STORAGE_KEY = 'ES_ADJUSTMENT_WEBAPP_FINAL';
 const DEFAULT_PAGE = 'overview';
 
 function uid() {
@@ -10,37 +10,18 @@ function clone(obj) {
 }
 
 function createNewItem(name = '신규 비목') {
-  return {
-    id: uid(),
-    name,
-    cost: 0,
-    baseIndex: 0,
-    compareIndex: 0,
-    note: ''
-  };
+  return { id: uid(), name, cost: 0, baseIndex: 0, compareIndex: 0, note: '' };
 }
 
 function createNewGroup(name = '신규 비목군') {
-  return {
-    id: uid(),
-    name,
-    items: [createNewItem()]
-  };
+  return { id: uid(), name, items: [createNewItem()] };
 }
 
 const SAMPLE_STATE = {
-  meta: {
-    agency: '',
-    projectName: '',
-    bidDate: '',
-    contractDate: '',
-    compareDate: '',
-    memo: ''
-  },
+  meta: { agency: '', projectName: '', bidDate: '', contractDate: '', compareDate: '', memo: '' },
   groups: [
     {
-      id: uid(),
-      name: '직접공사비',
+      id: uid(), name: '직접공사비',
       items: [
         { id: uid(), name: '노무비', cost: 0, baseIndex: 100, compareIndex: 102.29, note: '' },
         { id: uid(), name: '재료비', cost: 0, baseIndex: 100, compareIndex: 103.58, note: '' },
@@ -48,19 +29,10 @@ const SAMPLE_STATE = {
       ]
     },
     {
-      id: uid(),
-      name: '제요율경비',
+      id: uid(), name: '제요율경비',
       items: [
         { id: uid(), name: '산재보험료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '산업안전보건관리비', cost: 0, baseIndex: 100, compareIndex: 101.89, note: '' },
-        { id: uid(), name: '고용보험료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '건설근로자 퇴직공제부금비', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '국민건강보험료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '국민연금보험료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '노인장기요양보험료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '건설기계대여금 지급보증서 발급수수료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '하도급대금 지급보증서 발급수수료', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' },
-        { id: uid(), name: '환경보전비', cost: 0, baseIndex: 100, compareIndex: 102.28, note: '' }
+        { id: uid(), name: '일반관리비', cost: 0, baseIndex: 100, compareIndex: 101.89, note: '' }
       ]
     }
   ]
@@ -122,11 +94,9 @@ function init() {
 
 function normalizeStateShape(rawState) {
   const next = clone(rawState);
-  if (!next.meta || typeof next.meta !== 'object') {
-    next.meta = clone(SAMPLE_STATE.meta);
-  } else {
-    next.meta = { ...clone(SAMPLE_STATE.meta), ...next.meta };
-  }
+  if (!next.meta || typeof next.meta !== 'object') next.meta = clone(SAMPLE_STATE.meta);
+  else next.meta = { ...clone(SAMPLE_STATE.meta), ...next.meta };
+  
   if (!Array.isArray(next.groups) || next.groups.length === 0) {
     next.groups = clone(SAMPLE_STATE.groups);
     return next;
@@ -177,10 +147,48 @@ function bindMeta() {
   els.memo.value = state.meta.memo || '';
 
   [els.agency, els.projectName, els.bidDate, els.contractDate, els.compareDate, els.memo].forEach((el) => {
-    el.addEventListener('input', () => {
-      syncMetaFromFields();
-      render(false);
-      saveState(false);
+    el.addEventListener('input', () => { syncMetaFromFields(); render(false); saveState(false); });
+  });
+}
+
+// === 메뉴 전환 핵심 로직 (모든 탭/사이드메뉴 활성화) ===
+function activatePage(pageName) {
+  // 1. 모든 섹션 숨기고 선택된 페이지만 보이기
+  $$('.pageSection').forEach((section) => {
+    if (section.id === `page-${pageName}`) {
+      section.style.display = 'block';
+      section.classList.add('is-active');
+    } else {
+      section.style.display = 'none';
+      section.classList.remove('is-active');
+    }
+  });
+
+  // 2. 사이드 메뉴 하이라이트
+  $$('#sideMenu .side-item').forEach((item) => {
+    item.classList.toggle('active', item.dataset.page === pageName);
+  });
+
+  // 3. 상단 탭 하이라이트
+  els.topTabs.forEach((tab) => {
+    if (tab.dataset.target) {
+      tab.classList.toggle('active', tab.dataset.target === pageName);
+    }
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function bindSideMenu() {
+  // 사이드 메뉴 클릭
+  $$('#sideMenu .side-item').forEach((button) => {
+    button.addEventListener('click', () => { activatePage(button.dataset.page || DEFAULT_PAGE); });
+  });
+  
+  // 상단 탭 클릭
+  els.topTabs.forEach(tab => {
+    tab.addEventListener('click', (e) => { 
+      if (e.target.dataset.target) activatePage(e.target.dataset.target); 
     });
   });
 }
@@ -188,99 +196,37 @@ function bindMeta() {
 function bindActions() {
   els.saveBtn.addEventListener('click', () => saveState(true));
   els.printBtn.addEventListener('click', () => window.print());
-  
   if (els.topPrintBtn) els.topPrintBtn.addEventListener('click', () => window.print());
-  els.topTabs.forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      if (e.target.dataset.target) activatePage(e.target.dataset.target);
-    });
-  });
-
+  
   els.loadSampleBtn.addEventListener('click', () => {
     state = clone(SAMPLE_STATE);
-    refreshMetaFields();
-    render();
-    saveState(false);
-    toast('샘플 데이터를 불러왔습니다.');
+    refreshMetaFields(); render(); saveState(false); toast('샘플 데이터를 불러왔습니다.');
   });
 
-  els.addGroupBtn.addEventListener('click', () => {
-    state.groups.push(createNewGroup());
-    render();
-    saveState(false);
-  });
-
+  els.addGroupBtn.addEventListener('click', () => { state.groups.push(createNewGroup()); render(); saveState(false); });
   els.addItemBtn.addEventListener('click', () => {
-    const directGroup = state.groups.find((group) => group.name === '직접공사비') || state.groups[0];
+    const directGroup = state.groups.find(g => g.name === '직접공사비') || state.groups[0];
     if (!directGroup) return;
     directGroup.items.push(createNewItem());
-    render();
-    saveState(false);
+    render(); saveState(false);
   });
 
   els.validateBtn.addEventListener('click', () => {
     const stats = calculateStats();
     const messages = buildValidationMessages(stats);
     if (messages.length === 0) {
-      if (Math.abs(stats.finalES) >= 0.03) {
-        showModal('검토 결과', '계수 합계와 지수 입력이 정상입니다.\n최종 조정율이 3%를 초과하여 조정 대상에 해당합니다.');
-      } else {
-        showModal('검토 결과', '계수 합계와 지수 입력은 정상이나,\n최종 조정율이 3% 미만으로 요건에 미달합니다.');
-      }
+      if (Math.abs(stats.finalES) >= 0.03) showModal('검토 결과', '계수 합계와 지수 입력이 정상입니다.\n최종 조정율이 3%를 초과하여 조정 대상에 해당합니다.');
+      else showModal('검토 결과', '계수 합계와 지수 입력은 정상이나,\n최종 조정율이 3% 미만으로 요건에 미달합니다.');
     } else {
       showModal('검토 필요', messages.join('\n'));
     }
   });
 
-  els.exportExcelBtn.addEventListener('click', () => {
-    syncMetaFromFields();
-    const stats = calculateStats();
-    const computedMap = new Map(stats.computed.map(c => [c.key, c]));
-
-    let csv = '\uFEFF';
-    
-    csv += `수요기관,${escapeCsv(state.meta.agency)}\n`;
-    csv += `공사명,${escapeCsv(state.meta.projectName)}\n`;
-    csv += `입찰일,${escapeCsv(state.meta.bidDate)}\n`;
-    csv += `계약일,${escapeCsv(state.meta.contractDate)}\n`;
-    csv += `비교시점,${escapeCsv(state.meta.compareDate)}\n\n`;
-
-    csv += '비목 / 비목군,물가변동 적용대가,계수(①),기준시점 지수(②),비교시점 지수(③),지수변동율(④),조정계수(⑤),비고\n';
-
-    state.groups.forEach((group) => {
-      const subtotalCost = (group.items || []).reduce((sum, item) => sum + parseNumber(item.cost), 0);
-      const subtotalCoefficient = stats.totalCost > 0 ? (subtotalCost / stats.totalCost) : 0;
-      
-      csv += `${escapeCsv('[' + group.name + ']')},${subtotalCost},${formatFixed(subtotalCoefficient, 4)},,,,,\n`;
-
-      group.items.forEach((item) => {
-        const computed = computedMap.get(`${group.id}:${item.id}`);
-        const indentedName = `    ${item.name}`;
-        
-        csv += `${escapeCsv(indentedName)},${item.cost},${formatFixed(computed.coefficient, 4)},${item.baseIndex},${item.compareIndex},${formatFixed(computed.fluctuationRate, 4)},${formatFixed(computed.adjustmentCoefficient, 5)},${escapeCsv(item.note)}\n`;
-      });
-    });
-
-    csv += `\n총 계,${stats.totalCost},${formatFixed(stats.actualTotalCoefficient, 4)},,,최종 ES 추정치,${formatFixed(stats.finalES * 100, 2)}%,\n`;
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const fileName = (state.meta.projectName || 'ES_조정율_산출기').replace(/[\\/:*?"<>|]/g, '_') + '.csv';
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  });
-
-  els.exportBtn.addEventListener('click', () => {
-    syncMetaFromFields();
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    const fileName = (state.meta.projectName || 'ES_조정율_산출기_백업').replace(/[\\/:*?"<>|]/g, '_') + '.json';
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    link.click();
-    URL.revokeObjectURL(link.href);
+  els.exportExcelBtn.addEventListener('click', exportCSV);
+  els.exportBtn.addEventListener('click', exportJSON);
+  els.resetBtn.addEventListener('click', () => {
+    if (!confirm('현재 입력값을 초기화할까요?')) return;
+    state = clone(SAMPLE_STATE); refreshMetaFields(); render(); saveState(false);
   });
 
   els.importInput.addEventListener('change', async (event) => {
@@ -291,10 +237,7 @@ function bindActions() {
       const parsed = JSON.parse(text);
       if (!parsed || !Array.isArray(parsed.groups)) throw new Error('invalid');
       state = normalizeStateShape(parsed);
-      refreshMetaFields();
-      render();
-      saveState(false);
-      toast('JSON 데이터를 복구했습니다.');
+      refreshMetaFields(); render(); saveState(false); toast('JSON 데이터를 복구했습니다.');
     } catch (error) {
       showModal('불러오기 실패', '유효한 JSON 백업 파일이 아닙니다.');
     } finally {
@@ -302,47 +245,9 @@ function bindActions() {
     }
   });
 
-  els.resetBtn.addEventListener('click', () => {
-    if (!confirm('현재 입력값을 초기 샘플 구조로 되돌릴까요?')) return;
-    state = clone(SAMPLE_STATE);
-    refreshMetaFields();
-    render();
-    saveState(false);
-  });
-
   els.modalClose.addEventListener('click', closeModal);
   els.modalOk.addEventListener('click', closeModal);
-  els.modalBackdrop.addEventListener('click', (event) => {
-    if (event.target === els.modalBackdrop) closeModal();
-  });
-}
-
-function bindSideMenu() {
-  $$('#sideMenu .side-item').forEach((button) => {
-    button.addEventListener('click', () => {
-      const nextPage = button.dataset.page || button.dataset.panel || DEFAULT_PAGE;
-      activatePage(nextPage);
-    });
-  });
-}
-
-function activatePage(pageName) {
-  $$('#sideMenu .side-item').forEach((item) => {
-    const itemPage = item.dataset.page || item.dataset.panel;
-    item.classList.toggle('active', itemPage === pageName);
-  });
-  els.topTabs.forEach((tab) => {
-    if (!tab.dataset.target) return;
-    if (pageName === 'overview' || pageName === 'table' || pageName === 'data') {
-      tab.classList.toggle('active', tab.dataset.target === 'overview');
-    } else if (pageName === 'review') {
-      tab.classList.toggle('active', tab.dataset.target === 'review');
-    }
-  });
-  $$('.pageSection').forEach((section) => {
-    section.classList.toggle('is-active', section.id === `page-${pageName}`);
-  });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  els.modalBackdrop.addEventListener('click', (e) => { if (e.target === els.modalBackdrop) closeModal(); });
 }
 
 function syncMetaFromFields() {
@@ -368,31 +273,17 @@ function parseNumber(value) {
   return Number(String(value ?? '').replace(/,/g, '').trim()) || 0;
 }
 
-function formatNumber(value) {
-  return new Intl.NumberFormat('ko-KR').format(parseNumber(value));
-}
+function formatNumber(value) { return new Intl.NumberFormat('ko-KR').format(parseNumber(value)); }
+function formatFixed(value, digits = 4) { return parseNumber(value).toFixed(digits); }
 
-function formatFixed(value, digits = 4) {
-  return parseNumber(value).toFixed(digits);
-}
-
-function escapeCsv(str) {
-  if (str === null || str === undefined) return '';
-  const s = String(str);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
-
-// 부동소수점 오차 방지 및 실무 엑셀 산출용 반올림 함수 추가
+// 실무 엑셀 산출용 반올림 함수
 function roundTo(num, digits) {
   const factor = Math.pow(10, digits);
   return Math.round((num + Number.EPSILON) * factor) / factor;
 }
 
 function calculateStats() {
-  const flatItems = state.groups.flatMap((group) => (group.items || []).map((item) => ({ group, item })));
+  const flatItems = state.groups.flatMap(g => (g.items || []).map(i => ({ group: g, item: i })));
   const totalCost = flatItems.reduce((sum, entry) => sum + parseNumber(entry.item.cost), 0);
 
   let actualTotalCoefficient = 0;
@@ -405,13 +296,9 @@ function calculateStats() {
     const baseIndex = parseNumber(item.baseIndex);
     const compareIndex = parseNumber(item.compareIndex);
     
-    // 1. 계수 산출 (소수점 4자리 기준 반올림)
+    // 엑셀 규격: 계수 4자리, 변동율 4자리, 조정계수 5자리
     const coefficient = totalCost > 0 ? roundTo(cost / totalCost, 4) : 0;
-    
-    // 2. 지수변동율 (소수점 4자리 반올림)
     const fluctuationRate = baseIndex > 0 ? roundTo(compareIndex / baseIndex, 4) : 1;
-    
-    // 3. 조정계수 (소수점 5자리 이하 처리용도. 보통은 더 정밀하게 다룸)
     const adjustmentCoefficient = baseIndex > 0 ? roundTo(coefficient * (fluctuationRate - 1), 5) : 0;
 
     actualTotalCoefficient += coefficient;
@@ -420,36 +307,16 @@ function calculateStats() {
     if (baseIndex <= 0) zeroBaseCount += 1;
     if (!String(item.name || '').trim()) emptyNameCount += 1;
 
-    return {
-      key: `${group.id}:${item.id}`,
-      cost,
-      baseIndex,
-      compareIndex,
-      coefficient,
-      fluctuationRate,
-      adjustmentCoefficient
-    };
+    return { key: `${group.id}:${item.id}`, cost, baseIndex, compareIndex, coefficient, fluctuationRate, adjustmentCoefficient };
   });
 
-  const displayedTotalCoefficient = totalCost > 0 ? actualTotalCoefficient : 0;
-
-  return {
-    totalCost,
-    actualTotalCoefficient,
-    displayedTotalCoefficient,
-    finalES,
-    zeroBaseCount,
-    emptyNameCount,
-    computed
-  };
+  return { totalCost, actualTotalCoefficient, finalES, zeroBaseCount, emptyNameCount, computed };
 }
 
 function buildValidationMessages(stats) {
   const messages = [];
   if (stats.totalCost <= 0) messages.push('- 총 적용대가가 0입니다.');
-  if (Math.abs(stats.actualTotalCoefficient - 1) > 0.0002 && stats.totalCost > 0) {
-    messages.push('- 계수 합계가 1.0000이 아닙니다.');
-  }
+  if (Math.abs(stats.actualTotalCoefficient - 1) > 0.0002 && stats.totalCost > 0) messages.push('- 계수 합계가 1.0000이 아닙니다.');
   if (stats.zeroBaseCount > 0) messages.push(`- 기준지수가 0인 비목 ${stats.zeroBaseCount}건이 있습니다.`);
   if (stats.emptyNameCount > 0) messages.push(`- 비목명 미입력 ${stats.emptyNameCount}건이 있습니다.`);
   return messages;
@@ -458,7 +325,7 @@ function buildValidationMessages(stats) {
 function render(showToastOnSave = false) {
   syncMetaFromFields();
   const stats = calculateStats();
-  const computedMap = new Map(stats.computed.map((entry) => [entry.key, entry]));
+  const computedMap = new Map(stats.computed.map(entry => [entry.key, entry]));
 
   els.tableBody.innerHTML = '';
 
@@ -474,33 +341,27 @@ function render(showToastOnSave = false) {
       <td class="mono right">${formatFixed(subtotalCoefficient, 4)}</td>
       <td colspan="5"></td>
       <td class="no-print center">
-        <div class="row wrap" style="justify-content:center">
-          <button class="btn smallAction" type="button" data-action="add-item" data-group-index="${groupIndex}">비목 추가</button>
-          <button class="btn smallAction" type="button" data-action="delete-group" data-group-index="${groupIndex}">비목군 삭제</button>
-        </div>
+        <button class="btn smallAction" data-action="add-item" data-group-index="${groupIndex}">비목 추가</button>
+        <button class="btn smallAction" data-action="delete-group" data-group-index="${groupIndex}">삭제</button>
       </td>
     `;
     els.tableBody.appendChild(groupRow);
 
     group.items.forEach((item, itemIndex) => {
-      const computed = computedMap.get(`${group.id}:${item.id}`) || {
-        coefficient: 0,
-        fluctuationRate: 1,
-        adjustmentCoefficient: 0
-      };
-      const signClass = computed.adjustmentCoefficient < 0 ? 'value-negative' : 'value-positive';
+      const c = computedMap.get(`${group.id}:${item.id}`) || { coefficient: 0, fluctuationRate: 1, adjustmentCoefficient: 0 };
+      const signClass = c.adjustmentCoefficient < 0 ? 'value-negative' : 'value-positive';
 
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><input class="tableInput" data-role="item-name" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${escapeHtml(item.name || '')}" placeholder="비목명"></td>
-        <td><input class="tableInput right mono" data-role="item-cost" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${formatNumber(item.cost)}" placeholder="0"></td>
-        <td><input class="tableInput readonly right mono" value="${formatFixed(computed.coefficient, 4)}" readonly></td>
-        <td><input class="tableInput right mono" data-role="item-base" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${item.baseIndex ?? 0}" placeholder="0"></td>
-        <td><input class="tableInput right mono" data-role="item-compare" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${item.compareIndex ?? 0}" placeholder="0"></td>
-        <td><input class="tableInput readonly right mono" value="${formatFixed(computed.fluctuationRate, 4)}" readonly></td>
-        <td><input class="tableInput readonly right mono ${signClass}" value="${formatFixed(computed.adjustmentCoefficient, 5)}" readonly></td>
-        <td><input class="tableInput" data-role="item-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${escapeHtml(item.note || '')}" placeholder="비고"></td>
-        <td class="no-print center"><button class="btn smallAction" type="button" data-action="delete-item" data-group-index="${groupIndex}" data-item-index="${itemIndex}">삭제</button></td>
+        <td><input class="tableInput" data-role="item-name" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${escapeHtml(item.name || '')}"></td>
+        <td><input class="tableInput right mono" data-role="item-cost" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${formatNumber(item.cost)}"></td>
+        <td><input class="tableInput readonly right mono" value="${formatFixed(c.coefficient, 4)}" readonly></td>
+        <td><input class="tableInput right mono" data-role="item-base" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${item.baseIndex || 0}"></td>
+        <td><input class="tableInput right mono" data-role="item-compare" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${item.compareIndex || 0}"></td>
+        <td><input class="tableInput readonly right mono" value="${formatFixed(c.fluctuationRate, 4)}" readonly></td>
+        <td><input class="tableInput readonly right mono ${signClass}" value="${formatFixed(c.adjustmentCoefficient, 5)}" readonly></td>
+        <td><input class="tableInput" data-role="item-note" data-group-index="${groupIndex}" data-item-index="${itemIndex}" value="${escapeHtml(item.note || '')}"></td>
+        <td class="no-print center"><button class="btn smallAction" data-action="delete-item" data-group-index="${groupIndex}" data-item-index="${itemIndex}">×</button></td>
       `;
       els.tableBody.appendChild(row);
     });
@@ -509,11 +370,12 @@ function render(showToastOnSave = false) {
   bindTableInputs();
 
   els.kpiTotalCost.textContent = formatNumber(stats.totalCost);
-  els.kpiCoefficient.textContent = formatFixed(stats.displayedTotalCoefficient, 4);
+  els.kpiCoefficient.textContent = formatFixed(stats.actualTotalCoefficient, 4);
   els.kpiES.textContent = `${formatFixed(stats.finalES * 100, 2)}%`;
   els.tfootTotalCost.textContent = formatNumber(stats.totalCost);
-  els.tfootCoefficient.textContent = formatFixed(stats.displayedTotalCoefficient, 4);
+  els.tfootCoefficient.textContent = formatFixed(stats.actualTotalCoefficient, 4);
   els.tfootES.textContent = `${formatFixed(stats.finalES * 100, 2)}%`;
+  
   els.summaryAgency.textContent = state.meta.agency || '-';
   els.summaryProject.textContent = state.meta.projectName || '-';
   els.summaryCompareDate.textContent = state.meta.compareDate || '-';
@@ -525,109 +387,119 @@ function render(showToastOnSave = false) {
     if (stats.totalCost > 0 && isOver3Percent) {
       els.kpiStatus.textContent = '조정 대상';
       els.statusBox.textContent = `검토 완료 · 3% 요건 충족`;
-      els.statusBox.style.color = '#166534';
-      els.statusBox.style.background = 'rgba(220,252,231,.85)';
-      els.statusBox.style.borderColor = 'rgba(22,101,52,.18)';
+      els.statusBox.style.color = '#166534'; els.statusBox.style.background = '#dcfce7'; els.statusBox.style.borderColor = '#bbf7d0';
     } else if (stats.totalCost > 0 && !isOver3Percent) {
       els.kpiStatus.textContent = '3% 미달';
       els.statusBox.textContent = `검토 완료 · 요건 미달 (3% 미만)`;
-      els.statusBox.style.color = '#92400e';
-      els.statusBox.style.background = 'rgba(254,243,199,.9)';
-      els.statusBox.style.borderColor = 'rgba(146,64,14,.16)';
+      els.statusBox.style.color = '#92400e'; els.statusBox.style.background = '#fef3c7'; els.statusBox.style.borderColor = '#fde68a';
     } else {
       els.kpiStatus.textContent = '데이터 없음';
       els.statusBox.textContent = '초기화 상태입니다.';
-      els.statusBox.style.color = '#6b7280';
-      els.statusBox.style.background = '#f3f4f6';
-      els.statusBox.style.borderColor = '#e5e7eb';
     }
-  } else if (messages.length <= 2) {
-    els.kpiStatus.textContent = '확인 필요';
-    els.statusBox.textContent = `확인 필요 · ${messages.join(' ')}`;
-    els.statusBox.style.color = '#92400e';
-    els.statusBox.style.background = 'rgba(254,243,199,.9)';
-    els.statusBox.style.borderColor = 'rgba(146,64,14,.16)';
   } else {
-    els.kpiStatus.textContent = '오류 다수';
-    els.statusBox.textContent = `오류 다수 · ${messages.join(' ')}`;
-    els.statusBox.style.color = '#991b1b';
-    els.statusBox.style.background = 'rgba(254,226,226,.88)';
-    els.statusBox.style.borderColor = 'rgba(153,27,27,.16)';
+    els.kpiStatus.textContent = '확인 필요';
+    els.statusBox.textContent = `오류 · ${messages[0]}`;
+    els.statusBox.style.color = '#991b1b'; els.statusBox.style.background = '#fee2e2'; els.statusBox.style.borderColor = '#fecaca';
   }
 
   if (showToastOnSave) saveState(true);
 }
 
 function bindTableInputs() {
-  $$('#tableBody [data-role]').forEach((input) => {
-    input.addEventListener('input', handleInputChange);
-  });
-  $$('#tableBody [data-action]').forEach((button) => {
-    button.addEventListener('click', handleTableAction);
-  });
+  $$('#tableBody [data-role]').forEach(i => i.addEventListener('input', handleInputChange));
+  $$('#tableBody [data-action]').forEach(b => b.addEventListener('click', handleTableAction));
 }
 
-function handleInputChange(event) {
-  const role = event.target.dataset.role;
-  const groupIndex = Number(event.target.dataset.groupIndex);
-  const itemIndex = Number(event.target.dataset.itemIndex);
+function handleInputChange(e) {
+  const { role, groupIndex, itemIndex } = e.target.dataset;
+  const gIdx = Number(groupIndex), iIdx = Number(itemIndex);
 
-  if (role === 'group-name') state.groups[groupIndex].name = event.target.value;
-  if (role === 'item-name') state.groups[groupIndex].items[itemIndex].name = event.target.value;
-  if (role === 'item-note') state.groups[groupIndex].items[itemIndex].note = event.target.value;
+  if (role === 'group-name') state.groups[gIdx].name = e.target.value;
+  if (role === 'item-name') state.groups[gIdx].items[iIdx].name = e.target.value;
+  if (role === 'item-note') state.groups[gIdx].items[iIdx].note = e.target.value;
   if (role === 'item-cost') {
-    const cleaned = event.target.value.replace(/[^0-9.-]/g, '');
-    state.groups[groupIndex].items[itemIndex].cost = parseNumber(cleaned);
-    event.target.value = cleaned ? formatNumber(cleaned) : '';
+    const cln = e.target.value.replace(/[^0-9.-]/g, '');
+    state.groups[gIdx].items[iIdx].cost = parseNumber(cln);
+    e.target.value = cln ? formatNumber(cln) : '';
   }
-  if (role === 'item-base') state.groups[groupIndex].items[itemIndex].baseIndex = parseNumber(event.target.value.replace(/[^0-9.-]/g, ''));
-  if (role === 'item-compare') state.groups[groupIndex].items[itemIndex].compareIndex = parseNumber(event.target.value.replace(/[^0-9.-]/g, ''));
+  if (role === 'item-base') state.groups[gIdx].items[iIdx].baseIndex = parseNumber(e.target.value.replace(/[^0-9.-]/g, ''));
+  if (role === 'item-compare') state.groups[gIdx].items[iIdx].compareIndex = parseNumber(e.target.value.replace(/[^0-9.-]/g, ''));
 
-  render();
-  saveState(false);
+  render(); saveState(false);
 }
 
-function handleTableAction(event) {
-  const action = event.target.dataset.action;
-  const groupIndex = Number(event.target.dataset.groupIndex);
-  const itemIndex = Number(event.target.dataset.itemIndex);
+function handleTableAction(e) {
+  const { action, groupIndex, itemIndex } = e.target.dataset;
+  const gIdx = Number(groupIndex), iIdx = Number(itemIndex);
 
-  if (action === 'add-item') state.groups[groupIndex].items.push(createNewItem());
+  if (action === 'add-item') state.groups[gIdx].items.push(createNewItem());
   if (action === 'delete-item') {
-    state.groups[groupIndex].items.splice(itemIndex, 1);
-    if (state.groups[groupIndex].items.length === 0) state.groups[groupIndex].items.push(createNewItem());
+    state.groups[gIdx].items.splice(iIdx, 1);
+    if (state.groups[gIdx].items.length === 0) state.groups[gIdx].items.push(createNewItem());
   }
   if (action === 'delete-group') {
-    state.groups.splice(groupIndex, 1);
+    state.groups.splice(gIdx, 1);
     if (state.groups.length === 0) state.groups.push(createNewGroup());
   }
-  render();
-  saveState(false);
+  render(); saveState(false);
 }
 
-function toast(message) {
-  const item = document.createElement('div');
-  item.className = 't';
-  item.textContent = message;
-  els.toastHost.appendChild(item);
-  setTimeout(() => item.remove(), 2200);
+function escapeCsv(str) {
+  if (str == null) return '';
+  const s = String(str);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function exportCSV() {
+  syncMetaFromFields();
+  const stats = calculateStats();
+  const cMap = new Map(stats.computed.map(c => [c.key, c]));
+  let csv = '\uFEFF';
+  
+  csv += `수요기관,${escapeCsv(state.meta.agency)}\n공사명,${escapeCsv(state.meta.projectName)}\n입찰일,${escapeCsv(state.meta.bidDate)}\n계약일,${escapeCsv(state.meta.contractDate)}\n비교시점,${escapeCsv(state.meta.compareDate)}\n\n`;
+  csv += '비목 / 비목군,물가변동 적용대가,계수(①),기준시점 지수(②),비교시점 지수(③),지수변동율(④),조정계수(⑤),비고\n';
+
+  state.groups.forEach(g => {
+    const subCost = (g.items || []).reduce((s, i) => s + parseNumber(i.cost), 0);
+    const subCoeff = stats.totalCost > 0 ? (subCost / stats.totalCost) : 0;
+    csv += `${escapeCsv('[' + g.name + ']')},${subCost},${formatFixed(subCoeff, 4)},,,,,\n`;
+
+    g.items.forEach(i => {
+      const c = cMap.get(`${g.id}:${i.id}`);
+      csv += `${escapeCsv('    ' + i.name)},${i.cost},${formatFixed(c.coefficient, 4)},${i.baseIndex},${i.compareIndex},${formatFixed(c.fluctuationRate, 4)},${formatFixed(c.adjustmentCoefficient, 5)},${escapeCsv(i.note)}\n`;
+    });
+  });
+
+  csv += `\n총 계,${stats.totalCost},${formatFixed(stats.actualTotalCoefficient, 4)},,,최종 ES 추정치(K),${formatFixed(stats.finalES * 100, 2)}%,\n`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${state.meta.projectName || 'ES_산출기'}.csv`;
+  link.click(); URL.revokeObjectURL(link.href);
+}
+
+function exportJSON() {
+  syncMetaFromFields();
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${state.meta.projectName || 'ES_산출기_백업'}.json`;
+  link.click(); URL.revokeObjectURL(link.href);
+}
+
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 't'; t.textContent = msg;
+  els.toastHost.appendChild(t); setTimeout(() => t.remove(), 2200);
 }
 
 function showModal(title, text) {
-  els.modalTitle.textContent = title;
-  els.modalBody.textContent = text;
-  els.modalBackdrop.classList.remove('hidden');
+  els.modalTitle.textContent = title; els.modalBody.textContent = text; els.modalBackdrop.classList.remove('hidden');
 }
 
-function closeModal() {
-  els.modalBackdrop.classList.add('hidden');
-}
+function closeModal() { els.modalBackdrop.classList.add('hidden'); }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function escapeHtml(val) {
+  return String(val ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
