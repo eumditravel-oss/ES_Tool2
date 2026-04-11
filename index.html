@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ES 지수조정율 산출기 (실무형)</title>
+  <title>ES 조정율 산출기</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -15,8 +15,8 @@
       <div class="brand">
         <div class="brandMark">ES</div>
         <div class="brandText">
-          <strong>ES 지수조정율</strong>
-          <span>전문가용 산출기</span>
+          <strong>ES 조정율</strong>
+          <span>물가변동 산출기</span>
         </div>
       </div>
       <div class="topCenter">
@@ -67,17 +67,19 @@
           <div class="sectionTitle">검토 상태</div>
         </div>
         <div id="statusBox" class="statusBox">입력 대기</div>
+        <div class="sideHint">총 적용대가, 기준지수 0 여부, 비목명 누락 여부 및 3% 조정 요건 충족을 검토합니다.</div>
       </section>
     </aside>
 
     <main class="main">
       <div class="view viewPages">
+
         <section class="pageSection is-active" id="page-overview">
-          <section class="card heroCard">
+          <section class="card heroCard" id="panel-overview">
             <div class="heroHead">
               <div>
-                <div class="heroTitle">지수조정율(K) 산출 요약</div>
-                <div class="heroSub">실무 엑셀 표준 수식(ROUND)을 적용한 계산 결과입니다.</div>
+                <div class="heroTitle">ES 조정율 산출기</div>
+                <div class="heroSub">비목별 금액 비중과 지수 변동율을 합산해 최종 ES 추정치를 계산합니다.</div>
               </div>
               <div class="heroActions no-print">
                 <button id="printBtn" class="btn" type="button">인쇄 / PDF</button>
@@ -86,44 +88,70 @@
             </div>
             <div class="kpiGrid">
               <article class="card kpiCard">
-                <div class="kpiLabel">총 적용대가</div>
+                <div class="kpiLabel">총 물가변동 적용대가</div>
                 <div class="kpiValue mono" id="kpiTotalCost">0</div>
               </article>
               <article class="card kpiCard">
                 <div class="kpiLabel">총 계수 합계</div>
-                <div class="kpiValue mono" id="kpiCoefficient">0.00000</div>
+                <div class="kpiValue mono" id="kpiCoefficient">0.0000</div>
               </article>
               <article class="card kpiCard accentCard">
-                <div class="kpiLabel">최종 지수조정율(K)</div>
+                <div class="kpiLabel">최종 ES 추정치</div>
                 <div class="kpiValue mono" id="kpiES">0.0000%</div>
               </article>
-              <article class="card kpiCard" id="kpiStatusCard">
-                <div class="kpiLabel">3% 판정 결과</div>
-                <div class="kpiStatus" id="kpiDecision">대기</div>
+              <article class="card kpiCard">
+                <div class="kpiLabel">검토 결과</div>
+                <div class="kpiStatus" id="kpiStatus">입력 대기</div>
               </article>
             </div>
           </section>
 
           <section class="dashGrid">
             <article class="card dashCard">
-              <div class="dashCardHead"><div><button class="dashCardTitleLink">기본 정보</button></div></div>
+              <div class="dashCardHead">
+                <div>
+                  <button class="dashCardTitleLink" type="button">기본 정보</button>
+                  <div class="dashCardSub">문서 메타 정보 및 기준일 관리</div>
+                </div>
+              </div>
               <div class="formGrid metaGrid">
-                <label class="fieldLabel"><span>수요기관</span><input id="agency" class="field" type="text"></label>
-                <label class="fieldLabel"><span>공사명</span><input id="projectName" class="field" type="text"></label>
-                <label class="fieldLabel"><span>입찰일</span><input id="bidDate" class="field" type="date"></label>
-                <label class="fieldLabel"><span>계약일</span><input id="contractDate" class="field" type="date"></label>
-                <label class="fieldLabel span2"><span>비교시점(물가변동일)</span><input id="compareDate" class="field" type="date"></label>
+                <label class="fieldLabel">
+                  <span>수요기관</span>
+                  <input id="agency" class="field" type="text" placeholder="수요기관명을 입력하세요">
+                </label>
+                <label class="fieldLabel">
+                  <span>공사명</span>
+                  <input id="projectName" class="field" type="text" placeholder="공사명을 입력하세요">
+                </label>
+                <label class="fieldLabel">
+                  <span>입찰일</span>
+                  <input id="bidDate" class="field" type="date">
+                </label>
+                <label class="fieldLabel">
+                  <span>계약일</span>
+                  <input id="contractDate" class="field" type="date">
+                </label>
+                <label class="fieldLabel span2">
+                  <span>비교시점</span>
+                  <input id="compareDate" class="field" type="date">
+                </label>
               </div>
             </article>
 
             <article class="card dashCard">
-              <div class="dashCardHead"><div><button class="dashCardTitleLink">실무 산출 기준</button></div></div>
-              <div class="formulaList">
-                <div class="formulaItem"><strong>계수(①)</strong>: 소수점 5자리 반올림 (ROUND 5)</div>
-                <div class="formulaItem"><strong>변동율(④)</strong>: 소수점 5자리 반올림 (ROUND 5)</div>
-                <div class="formulaItem"><strong>조정계수(⑤)</strong>: 소수점 6자리 반올림 (ROUND 6)</div>
-                <div class="formulaItem"><strong>3% 판정</strong>: |K| ≥ 3% 이면 조정 가능</div>
+              <div class="dashCardHead">
+                <div>
+                  <button class="dashCardTitleLink" type="button">계산식</button>
+                  <div class="dashCardSub">현재 계산 로직 (엑셀 기준 적용)</div>
+                </div>
               </div>
+              <div class="formulaList">
+                <div class="formulaItem"><strong>계수(①)</strong> = 비목 적용대가 ÷ 총 적용대가 (소수점 4자리 반올림)</div>
+                <div class="formulaItem"><strong>지수변동율(④)</strong> = 비교시점 지수 ÷ 기준시점 지수 (소수점 4자리 반올림)</div>
+                <div class="formulaItem"><strong>조정계수(⑤)</strong> = 계수 × (지수변동율 - 1) (소수점 5자리 반올림)</div>
+                <div class="formulaItem"><strong>최종 ES 추정치</strong> = Σ 조정계수 × 100(%)</div>
+              </div>
+              <div class="hintBox">날짜 입력은 기록 및 문서 관리용이며, 외부 지수 자동 조회는 아직 연결하지 않았습니다.</div>
             </article>
           </section>
         </section>
@@ -131,23 +159,27 @@
         <section class="pageSection" id="page-table">
           <section class="card" id="panel-table">
             <div class="dashCardHead">
-              <div><button class="dashCardTitleLink">산출 상세 입력</button></div>
+              <div>
+                <button class="dashCardTitleLink" type="button">산출 입력</button>
+                <div class="dashCardSub">비목군, 비목, 지수, 비고를 자유롭게 수정할 수 있습니다.</div>
+              </div>
               <div class="row no-print wrap">
-                <button id="addGroupBtn" class="btn">+ 비목군 추가</button>
-                <button id="addItemBtn" class="btn primary">+ 직접공사비 비목 추가</button>
-                <button id="validateBtn" class="btn">정밀 검토</button>
+                <button id="addGroupBtn" class="btn" type="button">+ 비목군 추가</button>
+                <button id="addItemBtn" class="btn primary" type="button">+ 직접공사비 비목 추가</button>
+                <button id="validateBtn" class="btn" type="button">계수 검토</button>
               </div>
             </div>
+
             <div class="tableWrap">
               <table class="esTable">
                 <thead>
                   <tr>
                     <th>비목 / 비목군</th>
-                    <th>적용대가</th>
+                    <th>물가변동 적용대가</th>
                     <th>계수(①)</th>
-                    <th>기준지수(②)</th>
-                    <th>비교지수(③)</th>
-                    <th>변동율(④)</th>
+                    <th>기준시점 지수(②)</th>
+                    <th>비교시점 지수(③)</th>
+                    <th>지수변동율(④)</th>
                     <th>조정계수(⑤)</th>
                     <th>비고</th>
                     <th class="no-print">관리</th>
@@ -158,8 +190,8 @@
                   <tr>
                     <td>총 계</td>
                     <td id="tfootTotalCost" class="mono text-right">0</td>
-                    <td id="tfootCoefficient" class="mono text-right">0.00000</td>
-                    <td colspan="3" class="text-right">최종 지수조정율 (K)</td>
+                    <td id="tfootCoefficient" class="mono text-right">0.0000</td>
+                    <td colspan="3" class="text-right">최종 ES 추정치</td>
                     <td id="tfootES" class="mono text-right accentText">0.0000%</td>
                     <td></td>
                     <td class="no-print"></td>
@@ -171,36 +203,63 @@
         </section>
 
         <section class="pageSection" id="page-review">
-          <section class="card dashCard">
-            <div class="dashCardHead"><div><button class="dashCardTitleLink">검토 메모</button></div></div>
-            <textarea id="memo" class="field memoField" placeholder="지수 출처 및 제외 항목 사유를 기록하세요."></textarea>
+          <section class="dashGrid singleGrid">
+            <article class="card dashCard" id="panel-review">
+              <div class="dashCardHead">
+                <div>
+                  <button class="dashCardTitleLink" type="button">검토 메모</button>
+                  <div class="dashCardSub">발주처 기준, 제외 항목, 검토 사항 기록</div>
+                </div>
+              </div>
+              <textarea id="memo" class="field memoField" placeholder="근거, 지수 출처, 제외 기준, 협의 사항 등을 기록하세요."></textarea>
+            </article>
           </section>
         </section>
 
         <section class="pageSection" id="page-data">
-          <section class="card dashCard">
-            <div class="dashCardHead"><div><button class="dashCardTitleLink">데이터 백업 및 내보내기</button></div></div>
-            <div class="stack gap10 no-print">
-              <div class="row wrap">
-                <button id="exportExcelBtn" class="btn primary">Excel(CSV) 내보내기</button>
-                <button id="exportBtn" class="btn">JSON 백업</button>
-                <label class="btn fileBtn">JSON 복구<input id="importInput" type="file" accept="application/json" hidden></label>
-                <button id="resetBtn" class="btn">초기화</button>
+          <section class="dashGrid singleGrid">
+            <article class="card dashCard" id="panel-data">
+              <div class="dashCardHead">
+                <div>
+                  <button class="dashCardTitleLink" type="button">데이터 관리</button>
+                  <div class="dashCardSub">브라우저 저장 / 시트 내보내기 / JSON 백업</div>
+                </div>
               </div>
-            </div>
+              <div class="stack gap10 no-print">
+                <div class="row wrap">
+                  <button id="exportExcelBtn" class="btn primary" type="button">Excel 내보내기</button>
+                  <button id="exportBtn" class="btn" type="button">JSON 백업</button>
+                  <label class="btn fileBtn">
+                    JSON 복구
+                    <input id="importInput" type="file" accept="application/json" hidden>
+                  </label>
+                  <button id="resetBtn" class="btn" type="button">초기화</button>
+                </div>
+                <div class="hintBox subtle">같은 브라우저에서는 자동 저장됩니다. Excel 내보내기를 통해 표 형태의 데이터로 저장할 수 있습니다.</div>
+              </div>
+            </article>
           </section>
         </section>
+
       </div>
     </main>
   </div>
+
   <div id="toastHost" class="toastHost"></div>
+
   <div id="modalBackdrop" class="modalBackdrop hidden">
     <div class="modal">
-      <div class="modalHead"><div class="modalTitle" id="modalTitle">알림</div><button id="modalClose" class="btn tiny">닫기</button></div>
+      <div class="modalHead">
+        <div class="modalTitle" id="modalTitle">알림</div>
+        <button id="modalClose" class="btn tiny" type="button">닫기</button>
+      </div>
       <div class="modalBody" id="modalBody"></div>
-      <div class="modalFoot"><button id="modalOk" class="btn primary">확인</button></div>
+      <div class="modalFoot">
+        <button id="modalOk" class="btn primary" type="button">확인</button>
+      </div>
     </div>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
