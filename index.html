@@ -8,52 +8,53 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="wizard-shell">
-    <aside class="left-panel">
-      <div class="brand-box">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
         <h1>ESC 보고서</h1>
-        <p>상세입력 / 결과보고서 분리형</p>
+        <p>상세입력 / 결과보고서 / 붙임9·10 작성</p>
       </div>
 
-      <div class="step-indicator">
-        <div class="step-item active" id="stepChip1">
-          <span class="step-no">1</span>
-          <span class="step-label">상세입력</span>
+      <div class="step-box">
+        <div class="step active" id="stepChipInput">
+          <span class="num">1</span>
+          <span class="txt">상세입력</span>
         </div>
         <div class="step-line"></div>
-        <div class="step-item" id="stepChip2">
-          <span class="step-no">2</span>
-          <span class="step-label">결과보고서</span>
+        <div class="step" id="stepChipReport">
+          <span class="num">2</span>
+          <span class="txt">결과보고서</span>
         </div>
       </div>
 
-      <div class="left-actions">
-        <button class="btn primary" id="toReportBtn" type="button">다음</button>
-        <button class="btn" id="toInputBtn" type="button">입력으로 돌아가기</button>
-        <button class="btn" id="saveDraftBtn" type="button">입력값 저장</button>
-        <button class="btn" id="loadDraftBtn" type="button">입력값 불러오기</button>
-        <button class="btn" id="printBtn" type="button">보고서 인쇄</button>
+      <div class="sidebar-actions">
+        <button type="button" class="btn primary" id="nextBtn">다음</button>
+        <button type="button" class="btn" id="backBtn">입력으로 돌아가기</button>
+        <button type="button" class="btn" id="saveBtn">입력값 저장</button>
+        <button type="button" class="btn" id="loadBtn">입력값 불러오기</button>
+        <button type="button" class="btn" id="printBtn">보고서 인쇄</button>
       </div>
     </aside>
 
-    <main class="main-panel">
+    <main class="main">
       <!-- STEP 1 -->
       <section class="screen active" id="inputScreen">
         <div class="screen-header">
           <h2>상세입력</h2>
-          <p>기준시점/비교시점, 비목군 조정율, 붙임9·10 내역서를 입력한 뒤 결과보고서를 생성합니다.</p>
+          <p>기준시점, 비교시점, K값, 내역서 항목을 먼저 입력한 뒤 결과 보고서로 이동합니다.</p>
         </div>
 
-        <div class="input-tabs">
-          <button class="tab-btn active" data-tab="tabBasic">기본정보</button>
-          <button class="tab-btn" data-tab="tabTimeline">시점/지수</button>
-          <button class="tab-btn" data-tab="tabRate">비목군 조정율</button>
-          <button class="tab-btn" data-tab="tabItems">붙임9·10 내역서</button>
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="basicTab">기본정보</button>
+          <button class="tab-btn" data-tab="timelineTab">시점/판정</button>
+          <button class="tab-btn" data-tab="kTab">지수조정율</button>
+          <button class="tab-btn" data-tab="itemsTab">붙임9·10 내역서</button>
         </div>
 
-        <div class="tab-panels">
-          <section class="tab-panel active" id="tabBasic">
-            <div class="panel-card">
+        <div class="tab-content">
+          <!-- 기본정보 -->
+          <section class="tab-panel active" id="basicTab">
+            <div class="card">
               <h3>기본 정보</h3>
               <div class="form-grid cols-2">
                 <label>ESC 회수
@@ -89,7 +90,7 @@
                 <label>총계약금액(B)
                   <input type="number" id="contractAmount" value="435335108459" />
                 </label>
-                <label>물가변동 적용제외 금액(C1)
+                <label>물가변동 적용제외금액(C1)
                   <input type="number" id="excludedAmount1" value="25000000000" />
                 </label>
                 <label>직불노무비(C2)
@@ -101,19 +102,20 @@
                 <label>기타 공제금액
                   <input type="number" id="etcDeduction" value="0" />
                 </label>
-                <label>안전관리비율(%)
-                  <input type="number" id="safeRate" value="1.86" step="0.01" />
+                <label>예정 공정율(%)
+                  <input type="number" id="plannedProgress" value="52.40" step="0.01" />
                 </label>
-                <label>고용보험료 등급
-                  <input type="text" id="employmentGrade" value="7등급" />
+                <label>실행 공정율(%)
+                  <input type="number" id="actualProgress" value="49.80" step="0.01" />
                 </label>
               </div>
             </div>
           </section>
 
-          <section class="tab-panel" id="tabTimeline">
-            <div class="panel-card">
-              <h3>기준시점 / 비교시점 / 지수 입력</h3>
+          <!-- 시점/판정 -->
+          <section class="tab-panel" id="timelineTab">
+            <div class="card">
+              <h3>기준시점 / 비교시점 / 판정 입력</h3>
               <div class="form-grid cols-2">
                 <label>입찰일(A)
                   <input type="date" id="bidDate" value="2024-01-17" />
@@ -124,7 +126,7 @@
                 <label>조정기준일(C)
                   <input type="date" id="adjustDate" value="2025-09-01" />
                 </label>
-                <label>직전조정기준일(D)
+                <label>직전 조정기준일(D)
                   <input type="date" id="prevAdjustDate" value="" />
                 </label>
 
@@ -133,13 +135,6 @@
                 </label>
                 <label>비교시점 노무비 평균치
                   <input type="number" id="compareLaborIndex" value="243452" />
-                </label>
-
-                <label>기준시점 기계경비 평균치
-                  <input type="number" id="baseMachineIndex" value="100.00" step="0.01" />
-                </label>
-                <label>비교시점 기계경비 평균치
-                  <input type="number" id="compareMachineIndex" value="102.87" step="0.01" />
                 </label>
 
                 <label>기준시점 광산품 지수
@@ -156,162 +151,162 @@
                   <input type="number" id="compareManufactureIndex" value="128.45" step="0.01" />
                 </label>
 
-                <label>기준시점 전력/수도 지수
+                <label>기준시점 전력/수도/폐기물 지수
                   <input type="number" id="baseUtilityIndex" value="110.21" step="0.01" />
                 </label>
-                <label>비교시점 전력/수도 지수
+                <label>비교시점 전력/수도/폐기물 지수
                   <input type="number" id="compareUtilityIndex" value="112.18" step="0.01" />
                 </label>
 
-                <label>기준시점 농림수산 지수
+                <label>기준시점 농림수산품 지수
                   <input type="number" id="baseAgriIndex" value="119.87" step="0.01" />
                 </label>
-                <label>비교시점 농림수산 지수
+                <label>비교시점 농림수산품 지수
                   <input type="number" id="compareAgriIndex" value="123.52" step="0.01" />
                 </label>
 
-                <label>기준시점 기타비목군 지수
-                  <input type="number" id="baseEtcIndex" value="100.00" step="0.01" />
+                <label>기준시점 발표월
+                  <input type="text" id="basePublishedMonth" value="2024-01" />
                 </label>
-                <label>비교시점 기타비목군 지수
-                  <input type="number" id="compareEtcIndex" value="104.78" step="0.01" />
+                <label>비교시점 발표월
+                  <input type="text" id="comparePublishedMonth" value="2025-09" />
                 </label>
               </div>
 
-              <div class="helper-box">
-                <strong>참고</strong>
-                <p>참조문서 기준 흐름을 반영하여 1회 ESC는 계약체결일 기준, 2회 이상부터는 직전조정기준일 기준으로 경과일수를 계산하도록 구성했습니다.</p>
+              <div class="info-box">
+                <strong>판정 기준</strong>
+                <p>1회 ESC는 계약체결일(B) 기준, 2회 이상 ESC는 직전 조정기준일(D) 기준으로 경과일수를 계산합니다. 계산식은 MAX(비교시점-기준시점-1, 0) 방식으로 처리했습니다.</p>
               </div>
             </div>
           </section>
 
-          <section class="tab-panel" id="tabRate">
-            <div class="panel-card">
-              <div class="section-headline">
-                <div>
-                  <h3>비목군 조정율 / K0~K3 산정</h3>
-                  <p>자동산정값을 확인하고 필요 시 직접 수정할 수 있습니다.</p>
-                </div>
-                <label class="switch-line">
-                  <input type="checkbox" id="useAutoKRates" checked />
-                  <span>자동산정율 사용</span>
-                </label>
-              </div>
+          <!-- K -->
+          <section class="tab-panel" id="kTab">
+            <div class="card">
+              <h3>K0 ~ K3 지수조정율 산정 입력</h3>
 
-              <div class="calc-preview-grid">
-                <div class="mini-stat">
-                  <span>노무비 지수</span>
-                  <strong id="calcLaborRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>기계경비 지수</span>
-                  <strong id="calcMachineRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>광산품 지수</span>
-                  <strong id="calcMineRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>공산품 지수</span>
-                  <strong id="calcManufactureRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>전력/수도 지수</span>
-                  <strong id="calcUtilityRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>농림수산 지수</span>
-                  <strong id="calcAgriRateView">0.0000%</strong>
-                </div>
-                <div class="mini-stat">
-                  <span>기타비목군 지수</span>
-                  <strong id="calcEtcRateView">0.0000%</strong>
-                </div>
-              </div>
-
-              <div class="rate-grid">
-                <div class="rate-card">
+              <div class="k-grid">
+                <div class="k-card">
                   <h4>기존비목(K0)</h4>
                   <label>적용대가
                     <input type="number" id="k0Amount" value="350000000000" />
                   </label>
                   <label>지수조정율(%)
-                    <input type="number" id="k0Rate" value="2.72" step="0.0001" />
+                    <input type="number" id="k0Rate" value="2.7200" step="0.0001" />
                   </label>
                 </div>
 
-                <div class="rate-card">
+                <div class="k-card">
                   <h4>신규비목(K1)</h4>
                   <label>적용대가
                     <input type="number" id="k1Amount" value="15000000000" />
                   </label>
                   <label>지수조정율(%)
-                    <input type="number" id="k1Rate" value="1.85" step="0.0001" />
+                    <input type="number" id="k1Rate" value="1.8500" step="0.0001" />
                   </label>
                 </div>
 
-                <div class="rate-card">
+                <div class="k-card">
                   <h4>신규비목(K2)</h4>
                   <label>적용대가
                     <input type="number" id="k2Amount" value="5000000000" />
                   </label>
                   <label>지수조정율(%)
-                    <input type="number" id="k2Rate" value="0.94" step="0.0001" />
+                    <input type="number" id="k2Rate" value="0.9400" step="0.0001" />
                   </label>
                 </div>
 
-                <div class="rate-card">
+                <div class="k-card">
                   <h4>신규비목(K3)</h4>
                   <label>적용대가
                     <input type="number" id="k3Amount" value="0" />
                   </label>
                   <label>지수조정율(%)
-                    <input type="number" id="k3Rate" value="0" step="0.0001" />
+                    <input type="number" id="k3Rate" value="0.0000" step="0.0001" />
                   </label>
                 </div>
               </div>
 
-              <div class="form-grid cols-2 top-gap">
-                <label>예정 공정율(%)
-                  <input type="number" id="plannedProgress" value="52.4" step="0.01" />
-                </label>
-                <label>실행 공정율(%)
-                  <input type="number" id="actualProgress" value="49.8" step="0.01" />
-                </label>
+              <div class="info-box">
+                <strong>최종 K 산정</strong>
+                <p>최종 지수조정율은 각 비목군 적용대가 비중 × 해당 지수조정율을 합산하는 가중 평균 방식으로 계산합니다.</p>
               </div>
             </div>
           </section>
 
-          <section class="tab-panel" id="tabItems">
-            <div class="panel-card">
-              <div class="items-header">
+          <!-- items -->
+          <section class="tab-panel" id="itemsTab">
+            <div class="card">
+              <div class="items-top">
                 <div>
-                  <h3>붙임9 / 붙임10 내역서 입력</h3>
-                  <p>일위대가표 / 산출근거 내역을 웹에서 입력할 수 있도록 구성했습니다.</p>
+                  <h3>붙임9 · 붙임10 작성 입력</h3>
+                  <p>공종 / 신규구분 선택에 따라 일위대가표, 단가산출근거 제목이 자동으로 바뀝니다.</p>
                 </div>
-                <button class="btn primary small" type="button" id="addItemRowBtn">행 추가</button>
+              </div>
+
+              <div class="form-grid cols-2 filter-grid">
+                <label>공종 선택
+                  <select id="selectedTrade">
+                    <option value="1">전체</option>
+                    <option value="2">건축</option>
+                    <option value="3">토목</option>
+                    <option value="4">기계</option>
+                    <option value="5">기계설비</option>
+                    <option value="6">전기</option>
+                    <option value="7">통신</option>
+                    <option value="8">소방</option>
+                    <option value="9">조경</option>
+                  </select>
+                </label>
+
+                <label>신규구분 선택
+                  <select id="selectedCategory">
+                    <option value="1">전체</option>
+                    <option value="2">기존비목(K0)</option>
+                    <option value="3">신규비목(K1)</option>
+                    <option value="4">신규비목(K2)</option>
+                    <option value="5">신규비목(K3)</option>
+                    <option value="6">신규비목(K4)</option>
+                    <option value="7">신규비목(K5)</option>
+                    <option value="8">신규비목(K6)</option>
+                    <option value="9">신규비목(K7)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="items-toolbar">
+                <button type="button" class="btn primary small" id="addItemBtn">행 추가</button>
               </div>
 
               <div class="table-wrap">
-                <table class="entry-table" id="itemsTable">
+                <table class="entry-table">
                   <thead>
                     <tr>
+                      <th>코드</th>
                       <th>공종</th>
                       <th>신규구분</th>
-                      <th>코드</th>
                       <th>공종명</th>
                       <th>규격</th>
                       <th>단위</th>
                       <th>합계</th>
                       <th>노무비(A)</th>
-                      <th>기계경비(B)</th>
+                      <th>국산장비(B')</th>
+                      <th>외산장비(B'')</th>
                       <th>기타경비(Z)</th>
                       <th>광산품(C)</th>
+                      <th>공산품(D)</th>
+                      <th>전력수도(E)</th>
+                      <th>농림수산(F)</th>
+                      <th>표준시장단가 G1</th>
+                      <th>G2</th>
+                      <th>G3</th>
+                      <th>G4</th>
+                      <th>G5</th>
                       <th>비고</th>
                       <th></th>
                     </tr>
                   </thead>
-                  <tbody id="itemsTbody"></tbody>
+                  <tbody id="itemsBody"></tbody>
                 </table>
               </div>
             </div>
@@ -321,23 +316,23 @@
 
       <!-- STEP 2 -->
       <section class="screen" id="reportScreen">
-        <div class="summary-strip">
+        <section class="summary-strip">
           <div class="summary-card">
             <span class="summary-label">경과일수</span>
             <strong id="sumElapsedDays">0일</strong>
             <span id="sumDaysBadge" class="pill neutral">판정중</span>
           </div>
           <div class="summary-card">
-            <span class="summary-label">최종 지수조정율</span>
+            <span class="summary-label">지수조정율</span>
             <strong id="sumKRate">0.0000%</strong>
             <span id="sumKBadge" class="pill neutral">판정중</span>
           </div>
           <div class="summary-card highlight">
             <span class="summary-label">최종 조정적용금액</span>
             <strong id="sumAdjustAmount">0 원</strong>
-            <span class="summary-sub">천원 미만 절사 / 공제 반영</span>
+            <span class="summary-sub">천 원 미만 절사 / 공제금액 반영</span>
           </div>
-        </div>
+        </section>
 
         <nav class="quick-nav">
           <a href="#coverPage">표지</a>
@@ -364,7 +359,7 @@
           <section class="paper submit-page" id="submitPage">
             <h2 class="doc-heading center">제 출 문</h2>
             <div class="submit-recipient" id="submitRecipient"></div>
-            <p class="submit-text" id="submitText1"></p>
+            <p class="submit-text" id="submitText"></p>
             <div class="submit-amount-title" id="submitAmountTitle"></div>
             <div class="submit-amount-value" id="submitAmountValue"></div>
             <div class="submit-date" id="submitDate"></div>
@@ -385,43 +380,47 @@
           </section>
 
           <section class="paper" id="attach1">
-            <div class="mini-project-title" id="a1ProjectName"></div>
+            <div class="mini-project-title" id="a1ProjectTitle"></div>
             <div class="attach-label">[ 붙임 1 ]</div>
             <h2 class="doc-heading">물가변동으로 인한 계약금액 조정에 대한 종합의견서</h2>
+
             <table class="report-table">
               <tbody>
                 <tr><th>수요기관</th><td id="a1DemandOrg"></td><th>공사명</th><td id="a1ContractName"></td></tr>
                 <tr><th>계약방법</th><td id="a1ContractMethod"></td><th>시공사</th><td id="a1Contractor"></td></tr>
-                <tr><th>담당부서</th><td id="a1TechDept"></td><th>담당자</th><td id="a1Manager"></td></tr>
-                <tr><th>전화</th><td id="a1ManagerPhone"></td><th>ESC 회수</th><td id="a1EscRound"></td></tr>
-                <tr><th>기준일</th><td id="a1BaseDate"></td><th>조정기준일</th><td id="a1AdjustDate"></td></tr>
-                <tr><th>경과일수</th><td id="a1ElapsedDays"></td><th>최종 지수조정율</th><td id="a1KRate"></td></tr>
-                <tr><th>산출 조정금액</th><td id="a1RawAdjustAmount"></td><th>최종 조정적용금액</th><td id="a1AdjustAmount" class="emphasis"></td></tr>
+                <tr><th>기술부서</th><td id="a1TechDept"></td><th>담당자</th><td id="a1Manager"></td></tr>
+                <tr><th>전화번호</th><td id="a1Phone"></td><th>ESC 회수</th><td id="a1Round"></td></tr>
+                <tr><th>기준시점</th><td id="a1BaseDate"></td><th>조정기준일</th><td id="a1AdjustDate"></td></tr>
+                <tr><th>경과일수</th><td id="a1Elapsed"></td><th>최종 지수조정율</th><td id="a1KRate"></td></tr>
+                <tr><th>산출 조정금액</th><td id="a1RawAdjust"></td><th>최종 조정적용금액</th><td id="a1FinalAdjust" class="emphasis"></td></tr>
               </tbody>
             </table>
+
             <div class="report-note" id="a1Opinion"></div>
           </section>
 
           <section class="paper" id="attach2">
-            <div class="mini-project-title" id="a2ProjectName"></div>
+            <div class="mini-project-title" id="a2ProjectTitle"></div>
             <div class="attach-label">[ 붙임 2 ]</div>
             <h2 class="doc-heading">물가변동으로 인한 계약금액 조정내역 총괄표</h2>
+
             <table class="report-table">
               <tbody>
-                <tr><th>총계약금액(B)</th><td id="a2B"></td><th>물가변동 적용제외 금액(C)</th><td id="a2C"></td></tr>
+                <tr><th>총계약금액(B)</th><td id="a2B"></td><th>물가변동 적용제외금액(C)</th><td id="a2C"></td></tr>
                 <tr><th>C1 적용제외금액</th><td id="a2C1"></td><th>C2 직불노무비</th><td id="a2C2"></td></tr>
                 <tr><th>물가변동 적용대가(D)</th><td id="a2D"></td><th>경과일수</th><td id="a2Days"></td></tr>
-                <tr><th>최종 지수조정율</th><td id="a2K"></td><th>산출 조정금액</th><td id="a2RawAdjustAmount"></td></tr>
+                <tr><th>최종 지수조정율</th><td id="a2KRate"></td><th>산출 조정금액</th><td id="a2RawAdjust"></td></tr>
                 <tr><th>선금급 공제</th><td id="a2Advance"></td><th>기타 공제</th><td id="a2Etc"></td></tr>
-                <tr><th>최종 조정적용금액</th><td id="a2AdjustAmount" class="emphasis"></td><th>판정결과</th><td id="a2Judge"></td></tr>
+                <tr><th>최종 조정적용금액</th><td id="a2FinalAdjust" class="emphasis"></td><th>판정결과</th><td id="a2Judge"></td></tr>
               </tbody>
             </table>
           </section>
 
           <section class="paper" id="attach21">
-            <div class="mini-project-title" id="a21ProjectName"></div>
+            <div class="mini-project-title" id="a21ProjectTitle"></div>
             <div class="attach-label">[ 붙임 2-1 ]</div>
             <h2 class="doc-heading">물가변동 지수조정율 산정표</h2>
+
             <table class="report-table">
               <thead>
                 <tr>
@@ -429,7 +428,7 @@
                   <th>적용대가</th>
                   <th>가중치</th>
                   <th>지수조정율</th>
-                  <th>가중 기여율</th>
+                  <th>가중 결과</th>
                 </tr>
               </thead>
               <tbody>
@@ -437,30 +436,32 @@
                 <tr><td>신규비목(K1)</td><td id="a21K1Amount"></td><td id="a21K1Weight"></td><td id="a21K1Rate"></td><td id="a21K1Result"></td></tr>
                 <tr><td>신규비목(K2)</td><td id="a21K2Amount"></td><td id="a21K2Weight"></td><td id="a21K2Rate"></td><td id="a21K2Result"></td></tr>
                 <tr><td>신규비목(K3)</td><td id="a21K3Amount"></td><td id="a21K3Weight"></td><td id="a21K3Rate"></td><td id="a21K3Result"></td></tr>
-                <tr class="total-row"><td>합계</td><td id="a21TotalAmount"></td><td id="a21TotalWeight"></td><td>최종 K</td><td id="a21TotalResult"></td></tr>
+                <tr class="total-row"><td>합계</td><td id="a21TotalAmount"></td><td id="a21TotalWeight"></td><td>최종 K</td><td id="a21FinalK"></td></tr>
               </tbody>
             </table>
           </section>
 
           <section class="paper" id="attach9">
-            <div class="mini-project-title" id="a9ProjectName"></div>
+            <div class="mini-project-title" id="a9ProjectTitle"></div>
             <div class="attach-label">[ 붙임 9 ]</div>
-            <h2 class="doc-heading" id="attach9Title">물가변동 적용대가의 비목군 분류 일위대가표</h2>
-            <div class="table-wrap report-table-wrap">
+            <h2 class="doc-heading" id="attach9Title"></h2>
+
+            <div class="table-wrap report-wrap">
               <table class="report-table wide-table">
                 <thead>
                   <tr>
+                    <th>코드</th>
                     <th>공종</th>
                     <th>신규구분</th>
-                    <th>코드</th>
                     <th>공종명</th>
                     <th>규격</th>
                     <th>단위</th>
                     <th>합계</th>
                     <th>노무비(A)</th>
-                    <th>기계경비(B)</th>
-                    <th>기타경비(Z)</th>
-                    <th>광산품(C)</th>
+                    <th>경비 계</th>
+                    <th>재료비 계</th>
+                    <th>표준시장단가 계</th>
+                    <th>검토합계</th>
                     <th>비고</th>
                   </tr>
                 </thead>
@@ -470,24 +471,34 @@
           </section>
 
           <section class="paper" id="attach10">
-            <div class="mini-project-title" id="a10ProjectName"></div>
+            <div class="mini-project-title" id="a10ProjectTitle"></div>
             <div class="attach-label">[ 붙임 10 ]</div>
-            <h2 class="doc-heading" id="attach10Title">물가변동 적용대가의 비목군 분류 산출근거</h2>
-            <div class="table-wrap report-table-wrap">
-              <table class="report-table wide-table">
+            <h2 class="doc-heading" id="attach10Title"></h2>
+
+            <div class="table-wrap report-wrap">
+              <table class="report-table wide-table detail-table">
                 <thead>
                   <tr>
+                    <th>코드</th>
                     <th>공종</th>
                     <th>신규구분</th>
-                    <th>코드</th>
                     <th>계약금액산출내역서의 항목별 계약단가에 대한 산출근거</th>
                     <th>규격</th>
                     <th>단위</th>
                     <th>합계</th>
                     <th>노무비(A)</th>
-                    <th>기계경비(B)</th>
+                    <th>국산장비(B')</th>
+                    <th>외산장비(B'')</th>
                     <th>기타경비(Z)</th>
                     <th>광산품(C)</th>
+                    <th>공산품(D)</th>
+                    <th>전력수도(E)</th>
+                    <th>농림수산(F)</th>
+                    <th>G1</th>
+                    <th>G2</th>
+                    <th>G3</th>
+                    <th>G4</th>
+                    <th>G5</th>
                     <th>비고</th>
                   </tr>
                 </thead>
