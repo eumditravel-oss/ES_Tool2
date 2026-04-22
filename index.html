@@ -175,7 +175,7 @@
 
               <div class="info-box">
                 <strong>판정 기준</strong>
-                <p>1회 ESC는 계약체결일(B) 기준, 2회 이상 ESC는 직전 조정기준일(D) 기준으로 경과일수를 계산합니다. 계산식은 MAX(비교시점-기준시점-1, 0) 방식으로 처리했습니다.</p>
+                <p>1회 ESC는 계약체결일(B) 기준, 2회 이상 ESC는 직전 조정기준일(D) 기준으로 경과일수를 계산합니다.</p>
               </div>
             </div>
           </section>
@@ -236,78 +236,200 @@
 
           <!-- items -->
           <section class="tab-panel" id="itemsTab">
-            <div class="card">
-              <div class="items-top">
+            <div class="estimate-card">
+              <div class="estimate-head">
                 <div>
-                  <h3>붙임9 · 붙임10 작성 입력</h3>
-                  <p>공종 / 신규구분 선택에 따라 일위대가표, 단가산출근거 제목이 자동으로 바뀝니다.</p>
+                  <h3>붙임9 · 붙임10 산출화면</h3>
+                  <p>코드 생성, 항목 추가, 상세 편집이 가능한 작업형 화면입니다.</p>
                 </div>
               </div>
 
-              <div class="form-grid cols-2 filter-grid">
-                <label>공종 선택
-                  <select id="selectedTrade">
-                    <option value="1">전체</option>
-                    <option value="2">건축</option>
-                    <option value="3">토목</option>
-                    <option value="4">기계</option>
-                    <option value="5">기계설비</option>
-                    <option value="6">전기</option>
-                    <option value="7">통신</option>
-                    <option value="8">소방</option>
-                    <option value="9">조경</option>
-                  </select>
-                </label>
+              <div class="estimate-toolbar">
+                <div class="toolbar-row">
+                  <div class="toolbar-group">
+                    <label>공종 선택</label>
+                    <select id="selectedTrade">
+                      <option value="1">전체</option>
+                      <option value="2">건축</option>
+                      <option value="3">토목</option>
+                      <option value="4">기계</option>
+                      <option value="5">기계설비</option>
+                      <option value="6">전기</option>
+                      <option value="7">통신</option>
+                      <option value="8">소방</option>
+                      <option value="9">조경</option>
+                    </select>
+                  </div>
 
-                <label>신규구분 선택
-                  <select id="selectedCategory">
-                    <option value="1">전체</option>
-                    <option value="2">기존비목(K0)</option>
-                    <option value="3">신규비목(K1)</option>
-                    <option value="4">신규비목(K2)</option>
-                    <option value="5">신규비목(K3)</option>
-                    <option value="6">신규비목(K4)</option>
-                    <option value="7">신규비목(K5)</option>
-                    <option value="8">신규비목(K6)</option>
-                    <option value="9">신규비목(K7)</option>
-                  </select>
-                </label>
+                  <div class="toolbar-group">
+                    <label>신규구분 선택</label>
+                    <select id="selectedCategory">
+                      <option value="1">전체</option>
+                      <option value="2">기존비목(K0)</option>
+                      <option value="3">신규비목(K1)</option>
+                      <option value="4">신규비목(K2)</option>
+                      <option value="5">신규비목(K3)</option>
+                      <option value="6">신규비목(K4)</option>
+                      <option value="7">신규비목(K5)</option>
+                      <option value="8">신규비목(K6)</option>
+                      <option value="9">신규비목(K7)</option>
+                    </select>
+                  </div>
+
+                  <div class="toolbar-group">
+                    <label>코드 접두어</label>
+                    <input type="text" id="codePrefix" value="A" />
+                  </div>
+
+                  <div class="toolbar-group">
+                    <label>검색</label>
+                    <input type="text" id="itemSearch" placeholder="코드 / 공종명 검색" />
+                  </div>
+                </div>
+
+                <div class="toolbar-actions">
+                  <button type="button" class="btn primary small" id="generateCodeBtn">코드 생성</button>
+                  <button type="button" class="btn small" id="addItemBtn">행 추가</button>
+                  <button type="button" class="btn small" id="duplicateItemBtn">행 복제</button>
+                  <button type="button" class="btn small danger" id="deleteSelectedBtn">선택 삭제</button>
+                  <button type="button" class="btn small" id="saveItemsBtn">내역서 저장</button>
+                  <button type="button" class="btn small" id="loadItemsBtn">내역서 불러오기</button>
+                </div>
               </div>
 
-              <div class="items-toolbar">
-                <button type="button" class="btn primary small" id="addItemBtn">행 추가</button>
-              </div>
+              <div class="estimate-layout">
+                <div class="estimate-left">
+                  <div class="panel-title-row">
+                    <h4>코드 목록</h4>
+                    <span id="itemCountLabel">0건</span>
+                  </div>
+                  <div class="code-list" id="codeList"></div>
+                </div>
 
-              <div class="table-wrap">
-                <table class="entry-table">
-                  <thead>
-                    <tr>
-                      <th>코드</th>
-                      <th>공종</th>
-                      <th>신규구분</th>
-                      <th>공종명</th>
-                      <th>규격</th>
-                      <th>단위</th>
-                      <th>합계</th>
-                      <th>노무비(A)</th>
-                      <th>국산장비(B')</th>
-                      <th>외산장비(B'')</th>
-                      <th>기타경비(Z)</th>
-                      <th>광산품(C)</th>
-                      <th>공산품(D)</th>
-                      <th>전력수도(E)</th>
-                      <th>농림수산(F)</th>
-                      <th>표준시장단가 G1</th>
-                      <th>G2</th>
-                      <th>G3</th>
-                      <th>G4</th>
-                      <th>G5</th>
-                      <th>비고</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="itemsBody"></tbody>
-                </table>
+                <div class="estimate-right">
+                  <div class="panel-title-row">
+                    <h4>상세입력</h4>
+                    <span id="selectedRowLabel">선택 없음</span>
+                  </div>
+
+                  <div class="detail-empty" id="detailEmpty">
+                    좌측 코드 목록에서 항목을 선택하면 상세입력이 가능합니다.
+                  </div>
+
+                  <div class="detail-form hidden" id="detailForm">
+                    <div class="detail-grid cols-4">
+                      <label>코드
+                        <input type="text" id="d_code" />
+                      </label>
+                      <label>공종
+                        <select id="d_trade"></select>
+                      </label>
+                      <label>신규구분
+                        <select id="d_category"></select>
+                      </label>
+                      <label>단위
+                        <input type="text" id="d_unit" />
+                      </label>
+
+                      <label class="span-2">공종명
+                        <input type="text" id="d_name" />
+                      </label>
+                      <label class="span-2">규격
+                        <input type="text" id="d_spec" />
+                      </label>
+
+                      <label>합계
+                        <input type="number" id="d_total" />
+                      </label>
+                      <label>노무비(A)
+                        <input type="number" id="d_labor" />
+                      </label>
+                      <label>국산장비(B')
+                        <input type="number" id="d_machineDomestic" />
+                      </label>
+                      <label>외산장비(B'')
+                        <input type="number" id="d_machineForeign" />
+                      </label>
+
+                      <label>기타경비(Z)
+                        <input type="number" id="d_misc" />
+                      </label>
+                      <label>광산품(C)
+                        <input type="number" id="d_mine" />
+                      </label>
+                      <label>공산품(D)
+                        <input type="number" id="d_manufacture" />
+                      </label>
+                      <label>전력수도(E)
+                        <input type="number" id="d_utility" />
+                      </label>
+
+                      <label>농림수산(F)
+                        <input type="number" id="d_agri" />
+                      </label>
+                      <label>G1
+                        <input type="number" id="d_g1" />
+                      </label>
+                      <label>G2
+                        <input type="number" id="d_g2" />
+                      </label>
+                      <label>G3
+                        <input type="number" id="d_g3" />
+                      </label>
+
+                      <label>G4
+                        <input type="number" id="d_g4" />
+                      </label>
+                      <label>G5
+                        <input type="number" id="d_g5" />
+                      </label>
+                      <label class="span-2">비고
+                        <input type="text" id="d_note" />
+                      </label>
+                    </div>
+
+                    <div class="detail-summary">
+                      <div class="sum-box">
+                        <span>경비 계</span>
+                        <strong id="detailExpenseTotal">0</strong>
+                      </div>
+                      <div class="sum-box">
+                        <span>재료비 계</span>
+                        <strong id="detailMaterialTotal">0</strong>
+                      </div>
+                      <div class="sum-box">
+                        <span>표준시장단가 계</span>
+                        <strong id="detailStdTotal">0</strong>
+                      </div>
+                      <div class="sum-box highlight">
+                        <span>검토 합계</span>
+                        <strong id="detailCheckTotal">0</strong>
+                      </div>
+                    </div>
+
+                    <div class="estimate-grid-wrap">
+                      <table class="mini-grid">
+                        <thead>
+                          <tr>
+                            <th>선택</th>
+                            <th>코드</th>
+                            <th>공종</th>
+                            <th>신규구분</th>
+                            <th>공종명</th>
+                            <th>규격</th>
+                            <th>단위</th>
+                            <th>합계</th>
+                            <th>노무비</th>
+                            <th>경비계</th>
+                            <th>재료비계</th>
+                            <th>표준시장단가계</th>
+                          </tr>
+                        </thead>
+                        <tbody id="miniGridBody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
