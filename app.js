@@ -1,74 +1,84 @@
 // app.js
 const $ = (id) => document.getElementById(id);
 
-const fields = {
-  escRound: $("escRound"),
-  reportDate: $("reportDate"),
-  demandOrg: $("demandOrg"),
-  contractName: $("contractName"),
-  contractor: $("contractor"),
-  contractMethod: $("contractMethod"),
-  techDept: $("techDept"),
-  managerName: $("managerName"),
-  managerTitle: $("managerTitle"),
-  managerPhone: $("managerPhone"),
-  bidDate: $("bidDate"),
-  contractDate: $("contractDate"),
-  adjustDate: $("adjustDate"),
-  prevAdjustDate: $("prevAdjustDate"),
-  contractAmount: $("contractAmount"),
-  excludedAmount1: $("excludedAmount1"),
-  directLaborAmount: $("directLaborAmount"),
-  plannedProgress: $("plannedProgress"),
-  actualProgress: $("actualProgress"),
-  kRate: $("kRate"),
-  k0Amount: $("k0Amount"),
-  k1Amount: $("k1Amount"),
-  k2Amount: $("k2Amount"),
-  k3Amount: $("k3Amount"),
-  k0Rate: $("k0Rate"),
-  k1Rate: $("k1Rate"),
-  k2Rate: $("k2Rate"),
-  k3Rate: $("k3Rate")
+const tradeOptions = [
+  "", "건축", "토목", "기계", "기계설비", "전기", "통신", "소방", "조경"
+];
+
+const categoryOptions = [
+  "", "기존비목(K0)", "신규비목(K1)", "신규비목(K2)", "신규비목(K3)",
+  "신규비목(K4)", "신규비목(K5)", "신규비목(K6)", "신규비목(K7)"
+];
+
+const state = {
+  items: [
+    {
+      trade: "건축",
+      category: "기존비목(K0)",
+      code: "A-001",
+      name: "철근콘크리트",
+      spec: "기초부",
+      unit: "식",
+      total: 15000000,
+      labor: 3000000,
+      machine: 1500000,
+      misc: 500000,
+      mine: 1200000,
+      note: "기본 예시"
+    }
+  ]
 };
 
-function toNumber(value) {
-  const n = Number(value);
+const fieldIds = [
+  "escRound","reportDate","demandOrg","contractName","contractor","contractMethod",
+  "techDept","managerName","managerTitle","managerPhone","contractAmount",
+  "excludedAmount1","directLaborAmount","advanceDeduction","etcDeduction",
+  "safeRate","employmentGrade","bidDate","contractDate","adjustDate","prevAdjustDate",
+  "baseLaborIndex","compareLaborIndex","basePpiMonth","comparePpiMonth",
+  "baseMineIndex","compareMineIndex","baseManufactureIndex","compareManufactureIndex",
+  "baseUtilityIndex","compareUtilityIndex","baseAgriIndex","compareAgriIndex",
+  "k0Amount","k1Amount","k2Amount","k3Amount","k0Rate","k1Rate","k2Rate","k3Rate",
+  "plannedProgress","actualProgress"
+];
+
+function toNumber(v) {
+  const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
-function formatCurrency(value) {
-  return `${Math.round(value).toLocaleString("ko-KR")} 원`;
+function formatCurrency(v) {
+  return `${Math.round(v).toLocaleString("ko-KR")} 원`;
 }
 
-function formatPercent(value, digits = 4) {
-  return `${toNumber(value).toFixed(digits)}%`;
+function formatPercent(v, digits = 4) {
+  return `${toNumber(v).toFixed(digits)}%`;
 }
 
 function formatDate(dateString) {
   if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "-";
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
-  return `${y}년 ${m}월 ${d}일`;
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "-";
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
 function formatMonth(dateString) {
   if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "-";
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "-";
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
 }
 
-function diffDays(start, end) {
-  if (!start || !end) return 0;
-  const s = new Date(start);
-  const e = new Date(end);
+function diffDays(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const s = new Date(startDate);
+  const e = new Date(endDate);
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 0;
-  const oneDay = 1000 * 60 * 60 * 24;
-  return Math.max(0, Math.floor((e - s) / oneDay) - 1);
+  const diff = Math.floor((e - s) / (1000 * 60 * 60 * 24)) - 1;
+  return Math.max(diff, 0);
+}
+
+function floorToThousand(v) {
+  return Math.floor(v / 1000) * 1000;
 }
 
 function setText(id, value) {
@@ -76,185 +86,217 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
-function setHTML(id, value) {
-  const el = $(id);
-  if (el) el.innerHTML = value;
+function showScreen(screen) {
+  $("inputScreen").classList.remove("active");
+  $("reportScreen").classList.remove("active");
+  $("stepChip1").classList.remove("active");
+  $("stepChip2").classList.remove("active");
+
+  if (screen === "report") {
+    $("reportScreen").classList.add("active");
+    $("stepChip2").classList.add("active");
+  } else {
+    $("inputScreen").classList.add("active");
+    $("stepChip1").classList.add("active");
+  }
 }
 
-function weightedResult(amount, rate, total) {
-  if (!total) return 0;
-  return (amount / total) * (rate / 100);
+function bindTabButtons() {
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      $(btn.dataset.tab).classList.add("active");
+    });
+  });
 }
 
-function buildAttach3Rows(applicableAmount) {
-  const labor = applicableAmount * 0.18;
-  const expense = applicableAmount * 0.12;
-  const material = applicableAmount * 0.70;
-
-  const rows = [
-    {
-      name: "① 노무비 합계",
-      amount: labor,
-      coeff: labor / applicableAmount,
-      baseIdx: 100,
-      compareIdx: 102.72,
-      note: ""
-    },
-    {
-      name: "② 경비 합계",
-      amount: expense,
-      coeff: expense / applicableAmount,
-      baseIdx: 100,
-      compareIdx: 101.55,
-      note: ""
-    },
-    {
-      name: "③ 재료비 합계",
-      amount: material,
-      coeff: material / applicableAmount,
-      baseIdx: 100,
-      compareIdx: 103.08,
-      note: ""
-    }
-  ];
-
-  return rows;
+function createSelect(options, value, onChange) {
+  const select = document.createElement("select");
+  options.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt;
+    option.textContent = opt || "선택";
+    if (opt === value) option.selected = true;
+    select.appendChild(option);
+  });
+  select.addEventListener("change", onChange);
+  return select;
 }
 
-function renderAttach3(applicableAmount) {
-  const tbody = $("attach3Body");
-  if (!tbody) return;
-
-  const rows = buildAttach3Rows(applicableAmount);
-
-  tbody.innerHTML = rows.map((row) => {
-    const changeRate = row.baseIdx === 0 ? 0 : row.compareIdx / row.baseIdx;
-    const adjustCoeff = row.coeff * changeRate;
-    return `
-      <tr>
-        <td>${row.name}</td>
-        <td>${formatCurrency(row.amount)}</td>
-        <td>${row.coeff.toFixed(4)}</td>
-        <td>${row.baseIdx.toFixed(2)}</td>
-        <td>${row.compareIdx.toFixed(2)}</td>
-        <td>${changeRate.toFixed(4)}</td>
-        <td>${adjustCoeff.toFixed(8)}</td>
-        <td>${row.note || "-"}</td>
-      </tr>
-    `;
-  }).join("");
+function createInput(value, type, onChange) {
+  const input = document.createElement("input");
+  input.type = type;
+  input.value = value ?? "";
+  input.addEventListener("input", onChange);
+  return input;
 }
 
-function collectData() {
-  const escRound = Math.max(1, toNumber(fields.escRound.value));
-  const reportDate = fields.reportDate.value;
-  const demandOrg = fields.demandOrg.value.trim();
-  const contractName = fields.contractName.value.trim();
-  const contractor = fields.contractor.value.trim();
-  const contractMethod = fields.contractMethod.value.trim();
-  const techDept = fields.techDept.value.trim();
-  const managerName = fields.managerName.value.trim();
-  const managerTitle = fields.managerTitle.value.trim();
-  const managerPhone = fields.managerPhone.value.trim();
-  const bidDate = fields.bidDate.value;
-  const contractDate = fields.contractDate.value;
-  const adjustDate = fields.adjustDate.value;
-  const prevAdjustDate = fields.prevAdjustDate.value;
+function renderItemsTable() {
+  const tbody = $("itemsTbody");
+  tbody.innerHTML = "";
 
-  const contractAmount = toNumber(fields.contractAmount.value);
-  const excludedAmount1 = toNumber(fields.excludedAmount1.value);
-  const directLaborAmount = toNumber(fields.directLaborAmount.value);
-  const plannedProgress = toNumber(fields.plannedProgress.value);
-  const actualProgress = toNumber(fields.actualProgress.value);
-  const kRate = toNumber(fields.kRate.value);
+  state.items.forEach((item, index) => {
+    const tr = document.createElement("tr");
 
-  const k0Amount = toNumber(fields.k0Amount.value);
-  const k1Amount = toNumber(fields.k1Amount.value);
-  const k2Amount = toNumber(fields.k2Amount.value);
-  const k3Amount = toNumber(fields.k3Amount.value);
+    const tdTrade = document.createElement("td");
+    tdTrade.appendChild(createSelect(tradeOptions, item.trade, (e) => {
+      state.items[index].trade = e.target.value;
+      renderAll();
+    }));
+    tr.appendChild(tdTrade);
 
-  const k0Rate = toNumber(fields.k0Rate.value);
-  const k1Rate = toNumber(fields.k1Rate.value);
-  const k2Rate = toNumber(fields.k2Rate.value);
-  const k3Rate = toNumber(fields.k3Rate.value);
+    const tdCategory = document.createElement("td");
+    tdCategory.appendChild(createSelect(categoryOptions, item.category, (e) => {
+      state.items[index].category = e.target.value;
+      renderAll();
+    }));
+    tr.appendChild(tdCategory);
 
-  const elapsedBaseDate = escRound === 1 ? contractDate : (prevAdjustDate || contractDate);
-  const elapsedDays = diffDays(elapsedBaseDate, adjustDate);
+    const fields = [
+      ["code", "text"],
+      ["name", "text"],
+      ["spec", "text"],
+      ["unit", "text"],
+      ["total", "number"],
+      ["labor", "number"],
+      ["machine", "number"],
+      ["misc", "number"],
+      ["mine", "number"],
+      ["note", "text"]
+    ];
 
-  const excludedAmount2 = directLaborAmount;
-  const excludedAmount = excludedAmount1 + excludedAmount2;
-  const applicableAmount = Math.max(0, contractAmount - excludedAmount);
-  const adjustAmount = Math.floor(applicableAmount * (kRate / 100));
+    fields.forEach(([key, type]) => {
+      const td = document.createElement("td");
+      td.appendChild(createInput(item[key], type, (e) => {
+        state.items[index][key] = type === "number" ? toNumber(e.target.value) : e.target.value;
+        renderAll();
+      }));
+      tr.appendChild(td);
+    });
 
-  const totalKAmount = k0Amount + k1Amount + k2Amount + k3Amount || 1;
-  const k0Weight = k0Amount / totalKAmount;
-  const k1Weight = k1Amount / totalKAmount;
-  const k2Weight = k2Amount / totalKAmount;
-  const k3Weight = k3Amount / totalKAmount;
+    const tdRemove = document.createElement("td");
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "remove-btn";
+    removeBtn.textContent = "삭제";
+    removeBtn.addEventListener("click", () => {
+      state.items.splice(index, 1);
+      renderItemsTable();
+      renderAll();
+    });
+    tdRemove.appendChild(removeBtn);
+    tr.appendChild(tdRemove);
 
-  const k0Result = weightedResult(k0Amount, k0Rate, totalKAmount);
-  const k1Result = weightedResult(k1Amount, k1Rate, totalKAmount);
-  const k2Result = weightedResult(k2Amount, k2Rate, totalKAmount);
-  const k3Result = weightedResult(k3Amount, k3Rate, totalKAmount);
-  const weightedKRate = (k0Result + k1Result + k2Result + k3Result) * 100;
+    tbody.appendChild(tr);
+  });
+}
+
+function addItemRow() {
+  state.items.push({
+    trade: "",
+    category: "",
+    code: "",
+    name: "",
+    spec: "",
+    unit: "",
+    total: 0,
+    labor: 0,
+    machine: 0,
+    misc: 0,
+    mine: 0,
+    note: ""
+  });
+  renderItemsTable();
+}
+
+function getValues() {
+  const data = {};
+  fieldIds.forEach((id) => {
+    data[id] = $(id).value;
+  });
+
+  data.escRound = Math.max(1, toNumber(data.escRound));
+  data.contractAmount = toNumber(data.contractAmount);
+  data.excludedAmount1 = toNumber(data.excludedAmount1);
+  data.directLaborAmount = toNumber(data.directLaborAmount);
+  data.advanceDeduction = toNumber(data.advanceDeduction);
+  data.etcDeduction = toNumber(data.etcDeduction);
+
+  data.k0Amount = toNumber(data.k0Amount);
+  data.k1Amount = toNumber(data.k1Amount);
+  data.k2Amount = toNumber(data.k2Amount);
+  data.k3Amount = toNumber(data.k3Amount);
+
+  data.k0Rate = toNumber(data.k0Rate);
+  data.k1Rate = toNumber(data.k1Rate);
+  data.k2Rate = toNumber(data.k2Rate);
+  data.k3Rate = toNumber(data.k3Rate);
+
+  const excludedAmount = data.excludedAmount1 + data.directLaborAmount;
+  const applicableAmount = Math.max(0, data.contractAmount - excludedAmount);
+
+  const baseDateForElapsed = data.escRound === 1
+    ? data.contractDate
+    : (data.prevAdjustDate || data.contractDate);
+
+  const elapsedDays = diffDays(baseDateForElapsed, data.adjustDate);
+
+  const totalKAmount = data.k0Amount + data.k1Amount + data.k2Amount + data.k3Amount || 1;
+
+  const k0Weight = data.k0Amount / totalKAmount;
+  const k1Weight = data.k1Amount / totalKAmount;
+  const k2Weight = data.k2Amount / totalKAmount;
+  const k3Weight = data.k3Amount / totalKAmount;
+
+  const k0Result = k0Weight * (data.k0Rate / 100);
+  const k1Result = k1Weight * (data.k1Rate / 100);
+  const k2Result = k2Weight * (data.k2Rate / 100);
+  const k3Result = k3Weight * (data.k3Rate / 100);
+
+  const finalKRateDecimal = k0Result + k1Result + k2Result + k3Result;
+  const finalKRatePercent = finalKRateDecimal * 100;
+
+  const rawAdjustAmount = floorToThousand(applicableAmount * finalKRateDecimal);
+  const finalAdjustAmount = floorToThousand(rawAdjustAmount - data.advanceDeduction - data.etcDeduction);
+
+  const periodPass = elapsedDays >= 90;
+  const ratePass = Math.abs(finalKRatePercent) >= 3;
+  const finalPass = periodPass && ratePass;
 
   return {
-    escRound,
-    reportDate,
-    demandOrg,
-    contractName,
-    contractor,
-    contractMethod,
-    techDept,
-    managerName,
-    managerTitle,
-    managerPhone,
-    bidDate,
-    contractDate,
-    adjustDate,
-    prevAdjustDate,
-    contractAmount,
-    excludedAmount1,
-    directLaborAmount,
-    excludedAmount2,
+    ...data,
+    items: state.items,
     excludedAmount,
     applicableAmount,
-    plannedProgress,
-    actualProgress,
-    kRate,
-    adjustAmount,
+    baseDateForElapsed,
     elapsedDays,
     totalKAmount,
-    k0Amount, k1Amount, k2Amount, k3Amount,
-    k0Rate, k1Rate, k2Rate, k3Rate,
     k0Weight, k1Weight, k2Weight, k3Weight,
     k0Result, k1Result, k2Result, k3Result,
-    weightedKRate
+    finalKRateDecimal,
+    finalKRatePercent,
+    rawAdjustAmount,
+    finalAdjustAmount,
+    periodPass,
+    ratePass,
+    finalPass
   };
 }
 
 function renderSummary(data) {
   setText("sumElapsedDays", `${data.elapsedDays.toLocaleString("ko-KR")}일`);
-  setText("sumKRate", formatPercent(data.kRate, 4));
-  setText("sumAdjustAmount", formatCurrency(data.adjustAmount));
+  setText("sumKRate", formatPercent(data.finalKRatePercent, 4));
+  setText("sumAdjustAmount", formatCurrency(data.finalAdjustAmount));
 
   const daysBadge = $("sumDaysBadge");
-  if (data.elapsedDays >= 90) {
-    daysBadge.textContent = "충족 (90일 이상)";
-    daysBadge.className = "pill pass";
-  } else {
-    daysBadge.textContent = "미달 (90일 미만)";
-    daysBadge.className = "pill fail";
-  }
+  daysBadge.textContent = data.periodPass ? "충족 (90일 이상)" : "미달 (90일 미만)";
+  daysBadge.className = `pill ${data.periodPass ? "pass" : "fail"}`;
 
   const kBadge = $("sumKBadge");
-  if (Math.abs(data.kRate) >= 3) {
-    kBadge.textContent = "충족 (3% 이상)";
-    kBadge.className = "pill pass";
-  } else {
-    kBadge.textContent = "미달 (3% 미만)";
-    kBadge.className = "pill fail";
-  }
+  kBadge.textContent = data.ratePass ? "충족 (3% 이상)" : "미달 (3% 미만)";
+  kBadge.className = `pill ${data.ratePass ? "pass" : "fail"}`;
 }
 
 function renderCover(data) {
@@ -264,19 +306,15 @@ function renderCover(data) {
   setText("coverReportMonth", formatMonth(data.reportDate));
 }
 
-function renderSubmitPage(data) {
-  setText("submitRecipient", `${data.contractor}  귀중`);
+function renderSubmit(data) {
+  setText("submitRecipient", `${data.contractor} 귀중`);
   setText(
     "submitText1",
-    `본 보고서는 「${data.contractName}」 현장에 대하여 물가변동으로 인한 계약금액 조정보고를 완료하고, 검토 결과를 제출하기 위하여 작성한 자료입니다.`
+    `${data.contractName}에 대하여 물가변동으로 인한 계약금액 조정 검토를 완료하였으며, 기준시점 및 비교시점 자료를 반영한 결과를 아래와 같이 제출합니다.`
   );
-  setText("submitAmountTitle", `물가변동으로 인한 계약금액조정 ( 제${data.escRound}회 ESC )`);
-  setText("submitAmountValue", `일금 ${formatCurrency(data.adjustAmount)} (￦ ${Math.round(data.adjustAmount).toLocaleString("ko-KR")})`);
+  setText("submitAmountTitle", `물가변동으로 인한 계약금액 조정 (제 ${data.escRound}회 ESC)`);
+  setText("submitAmountValue", `일금 ${formatCurrency(data.finalAdjustAmount)} (￦ ${Math.round(data.finalAdjustAmount).toLocaleString("ko-KR")})`);
   setText("submitDate", formatMonth(data.reportDate));
-}
-
-function renderTOC(data) {
-  setText("tocProjectName", `◈ 공사명 : ${data.contractName}`);
 }
 
 function renderAttach1(data) {
@@ -287,25 +325,21 @@ function renderAttach1(data) {
   setText("a1Contractor", data.contractor);
   setText("a1TechDept", data.techDept);
   setText("a1Manager", `${data.managerTitle} ${data.managerName}`);
-  setText("a1ManagerPhone", `전화 : ${data.managerPhone}`);
+  setText("a1ManagerPhone", data.managerPhone);
   setText("a1EscRound", `${data.escRound}회`);
-  setText("a1ContractDate1", formatDate(data.contractDate));
-  setText("a1ContractDate2", formatDate(data.contractDate));
-  setText("a1BidDate1", formatDate(data.bidDate));
-  setText("a1BidDate2", formatDate(data.bidDate));
-  setText("a1AdjustDate1", formatDate(data.adjustDate));
-  setText("a1AdjustDate2", formatDate(data.adjustDate));
-  setText("a1Round", `${data.escRound}회`);
+  setText("a1BaseDate", formatDate(data.baseDateForElapsed));
   setText("a1AdjustDate", formatDate(data.adjustDate));
-  setText("a1KRate", formatPercent(data.kRate, 4));
-  setText("a1AdjustAmount", formatCurrency(data.adjustAmount));
   setText("a1ElapsedDays", `${data.elapsedDays}일`);
+  setText("a1KRate", formatPercent(data.finalKRatePercent, 4));
+  setText("a1RawAdjustAmount", formatCurrency(data.rawAdjustAmount));
+  setText("a1AdjustAmount", formatCurrency(data.finalAdjustAmount));
 
   const opinion = [
-    `1) 조정기준일 기준 경과일수는 ${data.elapsedDays}일입니다.`,
-    `2) 지수조정율은 ${formatPercent(data.kRate, 4)}입니다.`,
-    `3) 물가변동 적용대가는 ${formatCurrency(data.applicableAmount)}이며, 조정금액은 ${formatCurrency(data.adjustAmount)}입니다.`,
-    `4) 경과일수 90일 및 등락율 3% 요건은 각각 ${data.elapsedDays >= 90 ? "충족" : "미달"}, ${Math.abs(data.kRate) >= 3 ? "충족" : "미달"} 상태입니다.`
+    `1) 경과일수는 ${data.elapsedDays}일이며 ${data.periodPass ? "기간요건을 충족합니다." : "기간요건을 충족하지 않습니다."}`,
+    `2) 최종 지수조정율은 ${formatPercent(data.finalKRatePercent, 4)}이며 ${data.ratePass ? "등락요건을 충족합니다." : "등락요건을 충족하지 않습니다."}`,
+    `3) 물가변동 적용대가는 ${formatCurrency(data.applicableAmount)}입니다.`,
+    `4) 산출 조정금액은 ${formatCurrency(data.rawAdjustAmount)}이며, 선금급 공제 ${formatCurrency(data.advanceDeduction)} 및 기타 공제 ${formatCurrency(data.etcDeduction)} 반영 후 최종 조정적용금액은 ${formatCurrency(data.finalAdjustAmount)}입니다.`,
+    `5) 최종 판정: ${data.finalPass ? "물가변동 조정 가능" : "물가변동 조정 불가"}`
   ].join("\n");
 
   setText("a1Opinion", opinion);
@@ -313,29 +347,22 @@ function renderAttach1(data) {
 
 function renderAttach2(data) {
   setText("a2ProjectName", `◈ 공사명 : ${data.contractName}`);
-  setText("a2Line1", `□ 수요기관 : ${data.demandOrg}`);
-  setText("a2Line2", `□ 물가변동 작성 및 검토자 : 소속 : ${data.techDept} / 직급 : ${data.managerTitle} / 성명 : ${data.managerName}`);
-  setText("a2Line3", `□ 공 사 명 : ${data.contractName}`);
-  setText("a2Line4", `□ 물가변동 경과기간 : ${data.elapsedDays}일 [ 기준시점 : ${formatDate(data.escRound === 1 ? data.contractDate : (data.prevAdjustDate || data.contractDate))}, 비교시점 : ${formatDate(data.adjustDate)} ]`);
-
   setText("a2B", formatCurrency(data.contractAmount));
   setText("a2C", formatCurrency(data.excludedAmount));
   setText("a2C1", formatCurrency(data.excludedAmount1));
-  setText("a2C2", formatCurrency(data.excludedAmount2));
+  setText("a2C2", formatCurrency(data.directLaborAmount));
   setText("a2D", formatCurrency(data.applicableAmount));
-  setText("a2Days", `${data.elapsedDays.toLocaleString("ko-KR")}`);
-  setText("a2K", data.kRate.toFixed(4));
-  setText("a2AdjustAmount", formatCurrency(data.adjustAmount));
+  setText("a2Days", `${data.elapsedDays}일`);
+  setText("a2K", formatPercent(data.finalKRatePercent, 4));
+  setText("a2RawAdjustAmount", formatCurrency(data.rawAdjustAmount));
+  setText("a2Advance", formatCurrency(data.advanceDeduction));
+  setText("a2Etc", formatCurrency(data.etcDeduction));
+  setText("a2AdjustAmount", formatCurrency(data.finalAdjustAmount));
+  setText("a2Judge", data.finalPass ? "기간 및 등락 요건 충족" : "요건 불충족");
 }
 
 function renderAttach21(data) {
   setText("a21ProjectName", `◈ 공사명 : ${data.contractName}`);
-
-  setText("a21K0Label", `기존비목(K0) (${formatDate(data.bidDate).replace(/년 |월 /g, ".").replace("일", "")})`);
-  setText("a21K1Label", `신규비목(K1)`);
-  setText("a21K2Label", `신규비목(K2)`);
-  setText("a21K3Label", `신규비목(K3)`);
-
   setText("a21K0Amount", formatCurrency(data.k0Amount));
   setText("a21K1Amount", formatCurrency(data.k1Amount));
   setText("a21K2Amount", formatCurrency(data.k2Amount));
@@ -351,89 +378,148 @@ function renderAttach21(data) {
   setText("a21K2Rate", formatPercent(data.k2Rate, 4));
   setText("a21K3Rate", formatPercent(data.k3Rate, 4));
 
-  setText("a21K0Result", data.k0Result.toFixed(4));
-  setText("a21K1Result", data.k1Result.toFixed(4));
-  setText("a21K2Result", data.k2Result.toFixed(4));
-  setText("a21K3Result", data.k3Result.toFixed(4));
+  setText("a21K0Result", formatPercent(data.k0Result * 100, 4));
+  setText("a21K1Result", formatPercent(data.k1Result * 100, 4));
+  setText("a21K2Result", formatPercent(data.k2Result * 100, 4));
+  setText("a21K3Result", formatPercent(data.k3Result * 100, 4));
 
   setText("a21TotalAmount", formatCurrency(data.totalKAmount));
   setText("a21TotalWeight", (data.k0Weight + data.k1Weight + data.k2Weight + data.k3Weight).toFixed(4));
-  setText("a21TotalResult", formatPercent(data.weightedKRate, 4));
+  setText("a21TotalResult", formatPercent(data.finalKRatePercent, 4));
 }
 
-function renderAttach4(data) {
-  setText("a4ProjectName", `◈ 공사명 : ${data.contractName}`);
+function buildAttachTitle(baseTitle, items) {
+  const trade = items.find((v) => v.trade)?.trade || "";
+  const category = items.find((v) => v.category)?.category || "";
+  if (!trade && !category) return baseTitle;
+  if (trade && !category) return `${baseTitle} - ${trade}`;
+  if (!trade && category) return `${baseTitle} - ${category}`;
+  return `${baseTitle} - ${trade} ${category}`;
 }
 
-function renderAttach5(data) {
-  setText("a5ProjectName", `◈ 공사명 : ${data.contractName}`);
+function renderItemsReport(data) {
+  setText("a9ProjectName", `◈ 공사명 : ${data.contractName}`);
+  setText("a10ProjectName", `◈ 공사명 : ${data.contractName}`);
+  setText("attach9Title", buildAttachTitle("물가변동 적용대가의 비목군 분류 일위대가표", data.items));
+  setText("attach10Title", buildAttachTitle("물가변동 적용대가의 비목군 분류 산출근거", data.items));
 
-  const labor = data.applicableAmount * 0.18;
-  const expense = data.applicableAmount * 0.12;
-  const material = data.applicableAmount * 0.70;
+  const attach9Body = $("attach9Body");
+  const attach10Body = $("attach10Body");
 
-  const laborExclude = data.excludedAmount * 0.25;
-  const expenseExclude = data.excludedAmount * 0.15;
-  const materialExclude = data.excludedAmount * 0.60;
+  if (!data.items.length) {
+    attach9Body.innerHTML = `<tr><td colspan="12">입력된 내역이 없습니다.</td></tr>`;
+    attach10Body.innerHTML = `<tr><td colspan="12">입력된 내역이 없습니다.</td></tr>`;
+    return;
+  }
 
-  setText("a5TotalContract", formatCurrency(data.contractAmount));
-  setText("a5Exclude", formatCurrency(data.excludedAmount));
-  setText("a5Applicable", formatCurrency(data.applicableAmount));
+  attach9Body.innerHTML = data.items.map((item) => `
+    <tr>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.code || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(item.machine)}</td>
+      <td>${formatCurrency(item.misc)}</td>
+      <td>${formatCurrency(item.mine)}</td>
+      <td>${item.note || "-"}</td>
+    </tr>
+  `).join("");
 
-  setText("a5Labor", formatCurrency(labor + laborExclude));
-  setText("a5LaborExclude", formatCurrency(laborExclude));
-  setText("a5LaborApplicable", formatCurrency(labor));
-
-  setText("a5Expense", formatCurrency(expense + expenseExclude));
-  setText("a5ExpenseExclude", formatCurrency(expenseExclude));
-  setText("a5ExpenseApplicable", formatCurrency(expense));
-
-  setText("a5Material", formatCurrency(material + materialExclude));
-  setText("a5MaterialExclude", formatCurrency(materialExclude));
-  setText("a5MaterialApplicable", formatCurrency(material));
-}
-
-function renderAttach6(data) {
-  setText("a6ProjectName", `◈ 공사명 : ${data.contractName}`);
-}
-
-function renderAttach7(data) {
-  setText("a7ProjectName", `◈ 공사명 : ${data.contractName}`);
-}
-
-function renderAttach8(data) {
-  setText("a8ProjectName", `◈ 공사명 : ${data.contractName}`);
+  attach10Body.innerHTML = data.items.map((item) => `
+    <tr>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.code || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(item.machine)}</td>
+      <td>${formatCurrency(item.misc)}</td>
+      <td>${formatCurrency(item.mine)}</td>
+      <td>${item.note || "-"}</td>
+    </tr>
+  `).join("");
 }
 
 function renderAll() {
-  const data = collectData();
+  const data = getValues();
+
+  setText("tocProjectName", `◈ 공사명 : ${data.contractName}`);
 
   renderSummary(data);
   renderCover(data);
-  renderSubmitPage(data);
-  renderTOC(data);
+  renderSubmit(data);
   renderAttach1(data);
   renderAttach2(data);
   renderAttach21(data);
-  renderAttach3(data.applicableAmount);
-  renderAttach4(data);
-  renderAttach5(data);
-  renderAttach6(data);
-  renderAttach7(data);
-  renderAttach8(data);
+  renderItemsReport(data);
 }
 
-Object.values(fields).forEach((input) => {
-  input.addEventListener("input", renderAll);
-  input.addEventListener("change", renderAll);
+function saveDraft() {
+  const formData = {};
+  fieldIds.forEach((id) => {
+    formData[id] = $(id).value;
+  });
+  localStorage.setItem("esc_report_form_v2", JSON.stringify({
+    formData,
+    items: state.items
+  }));
+  alert("입력값을 저장했습니다.");
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem("esc_report_form_v2");
+  if (!raw) {
+    alert("저장된 입력값이 없습니다.");
+    return;
+  }
+  const saved = JSON.parse(raw);
+  if (saved.formData) {
+    Object.entries(saved.formData).forEach(([key, value]) => {
+      if ($(key)) $(key).value = value;
+    });
+  }
+  state.items = Array.isArray(saved.items) ? saved.items : [];
+  renderItemsTable();
+  renderAll();
+  alert("입력값을 불러왔습니다.");
+}
+
+document.querySelectorAll("input").forEach((el) => {
+  el.addEventListener("input", renderAll);
+  el.addEventListener("change", renderAll);
 });
 
-$("printBtn").addEventListener("click", () => {
-  window.print();
+$("addItemRowBtn").addEventListener("click", () => {
+  addItemRow();
+  renderAll();
 });
 
-$("topBtn").addEventListener("click", () => {
+$("toReportBtn").addEventListener("click", () => {
+  renderAll();
+  showScreen("report");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+$("toInputBtn").addEventListener("click", () => {
+  showScreen("input");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+$("saveDraftBtn").addEventListener("click", saveDraft);
+$("loadDraftBtn").addEventListener("click", loadDraft);
+$("printBtn").addEventListener("click", () => {
+  showScreen("report");
+  window.print();
+});
+
+bindTabButtons();
+renderItemsTable();
 renderAll();
+showScreen("input");
