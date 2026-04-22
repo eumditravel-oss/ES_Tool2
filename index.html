@@ -28,7 +28,7 @@
       </div>
 
       <div class="left-actions">
-        <button class="btn primary" id="toReportBtn">다음</button>
+        <button class="btn primary" id="toReportBtn" type="button">다음</button>
         <button class="btn" id="toInputBtn" type="button">입력으로 돌아가기</button>
         <button class="btn" id="saveDraftBtn" type="button">입력값 저장</button>
         <button class="btn" id="loadDraftBtn" type="button">입력값 불러오기</button>
@@ -37,22 +37,21 @@
     </aside>
 
     <main class="main-panel">
-      <!-- STEP 1 : INPUT -->
+      <!-- STEP 1 -->
       <section class="screen active" id="inputScreen">
         <div class="screen-header">
           <h2>상세입력</h2>
-          <p>어느 시점의 단가와 지수를 불러올지 먼저 입력한 뒤 결과보고서로 이동합니다.</p>
+          <p>기준시점/비교시점, 비목군 조정율, 붙임9·10 내역서를 입력한 뒤 결과보고서를 생성합니다.</p>
         </div>
 
         <div class="input-tabs">
           <button class="tab-btn active" data-tab="tabBasic">기본정보</button>
-          <button class="tab-btn" data-tab="tabTimeline">시점/판정</button>
-          <button class="tab-btn" data-tab="tabRate">지수조정율</button>
+          <button class="tab-btn" data-tab="tabTimeline">시점/지수</button>
+          <button class="tab-btn" data-tab="tabRate">비목군 조정율</button>
           <button class="tab-btn" data-tab="tabItems">붙임9·10 내역서</button>
         </div>
 
         <div class="tab-panels">
-          <!-- 기본정보 -->
           <section class="tab-panel active" id="tabBasic">
             <div class="panel-card">
               <h3>기본 정보</h3>
@@ -112,10 +111,9 @@
             </div>
           </section>
 
-          <!-- 시점 / 판정 -->
           <section class="tab-panel" id="tabTimeline">
             <div class="panel-card">
-              <h3>기준시점 / 비교시점 / 판정 입력</h3>
+              <h3>기준시점 / 비교시점 / 지수 입력</h3>
               <div class="form-grid cols-2">
                 <label>입찰일(A)
                   <input type="date" id="bidDate" value="2024-01-17" />
@@ -129,55 +127,108 @@
                 <label>직전조정기준일(D)
                   <input type="date" id="prevAdjustDate" value="" />
                 </label>
+
                 <label>기준시점 노무비 평균치
                   <input type="number" id="baseLaborIndex" value="237006" />
                 </label>
                 <label>비교시점 노무비 평균치
                   <input type="number" id="compareLaborIndex" value="243452" />
                 </label>
-                <label>기준시점 발표월(PPI)
-                  <input type="text" id="basePpiMonth" value="2024-01" />
+
+                <label>기준시점 기계경비 평균치
+                  <input type="number" id="baseMachineIndex" value="100.00" step="0.01" />
                 </label>
-                <label>비교시점 발표월(PPI)
-                  <input type="text" id="comparePpiMonth" value="2025-09" />
+                <label>비교시점 기계경비 평균치
+                  <input type="number" id="compareMachineIndex" value="102.87" step="0.01" />
                 </label>
+
                 <label>기준시점 광산품 지수
                   <input type="number" id="baseMineIndex" value="121.83" step="0.01" />
                 </label>
                 <label>비교시점 광산품 지수
                   <input type="number" id="compareMineIndex" value="127.34" step="0.01" />
                 </label>
+
                 <label>기준시점 공산품 지수
                   <input type="number" id="baseManufactureIndex" value="124.04" step="0.01" />
                 </label>
                 <label>비교시점 공산품 지수
                   <input type="number" id="compareManufactureIndex" value="128.45" step="0.01" />
                 </label>
+
                 <label>기준시점 전력/수도 지수
                   <input type="number" id="baseUtilityIndex" value="110.21" step="0.01" />
                 </label>
                 <label>비교시점 전력/수도 지수
                   <input type="number" id="compareUtilityIndex" value="112.18" step="0.01" />
                 </label>
+
                 <label>기준시점 농림수산 지수
                   <input type="number" id="baseAgriIndex" value="119.87" step="0.01" />
                 </label>
                 <label>비교시점 농림수산 지수
                   <input type="number" id="compareAgriIndex" value="123.52" step="0.01" />
                 </label>
+
+                <label>기준시점 기타비목군 지수
+                  <input type="number" id="baseEtcIndex" value="100.00" step="0.01" />
+                </label>
+                <label>비교시점 기타비목군 지수
+                  <input type="number" id="compareEtcIndex" value="104.78" step="0.01" />
+                </label>
               </div>
 
               <div class="helper-box">
                 <strong>참고</strong>
-                <p>1회 ESC는 계약체결일(B)을 기준으로 경과일수를 계산하고, 2회 이상부터는 직전조정기준일(D)을 기준으로 경과일수를 계산하도록 구성했습니다.</p>
+                <p>참조문서 기준 흐름을 반영하여 1회 ESC는 계약체결일 기준, 2회 이상부터는 직전조정기준일 기준으로 경과일수를 계산하도록 구성했습니다.</p>
               </div>
             </div>
           </section>
 
-          <!-- 지수조정율 -->
           <section class="tab-panel" id="tabRate">
             <div class="panel-card">
-              <h3>K0 ~ K3 지수조정율 입력</h3>
+              <div class="section-headline">
+                <div>
+                  <h3>비목군 조정율 / K0~K3 산정</h3>
+                  <p>자동산정값을 확인하고 필요 시 직접 수정할 수 있습니다.</p>
+                </div>
+                <label class="switch-line">
+                  <input type="checkbox" id="useAutoKRates" checked />
+                  <span>자동산정율 사용</span>
+                </label>
+              </div>
+
+              <div class="calc-preview-grid">
+                <div class="mini-stat">
+                  <span>노무비 지수</span>
+                  <strong id="calcLaborRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>기계경비 지수</span>
+                  <strong id="calcMachineRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>광산품 지수</span>
+                  <strong id="calcMineRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>공산품 지수</span>
+                  <strong id="calcManufactureRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>전력/수도 지수</span>
+                  <strong id="calcUtilityRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>농림수산 지수</span>
+                  <strong id="calcAgriRateView">0.0000%</strong>
+                </div>
+                <div class="mini-stat">
+                  <span>기타비목군 지수</span>
+                  <strong id="calcEtcRateView">0.0000%</strong>
+                </div>
+              </div>
+
               <div class="rate-grid">
                 <div class="rate-card">
                   <h4>기존비목(K0)</h4>
@@ -188,6 +239,7 @@
                     <input type="number" id="k0Rate" value="2.72" step="0.0001" />
                   </label>
                 </div>
+
                 <div class="rate-card">
                   <h4>신규비목(K1)</h4>
                   <label>적용대가
@@ -197,6 +249,7 @@
                     <input type="number" id="k1Rate" value="1.85" step="0.0001" />
                   </label>
                 </div>
+
                 <div class="rate-card">
                   <h4>신규비목(K2)</h4>
                   <label>적용대가
@@ -206,6 +259,7 @@
                     <input type="number" id="k2Rate" value="0.94" step="0.0001" />
                   </label>
                 </div>
+
                 <div class="rate-card">
                   <h4>신규비목(K3)</h4>
                   <label>적용대가
@@ -228,13 +282,12 @@
             </div>
           </section>
 
-          <!-- 붙임9/10 -->
           <section class="tab-panel" id="tabItems">
             <div class="panel-card">
               <div class="items-header">
                 <div>
                   <h3>붙임9 / 붙임10 내역서 입력</h3>
-                  <p>일위대가표 / 단가산출근거를 웹에서도 작성할 수 있도록 입력행을 추가했습니다.</p>
+                  <p>일위대가표 / 산출근거 내역을 웹에서 입력할 수 있도록 구성했습니다.</p>
                 </div>
                 <button class="btn primary small" type="button" id="addItemRowBtn">행 추가</button>
               </div>
@@ -266,7 +319,7 @@
         </div>
       </section>
 
-      <!-- STEP 2 : REPORT -->
+      <!-- STEP 2 -->
       <section class="screen" id="reportScreen">
         <div class="summary-strip">
           <div class="summary-card">
@@ -275,14 +328,14 @@
             <span id="sumDaysBadge" class="pill neutral">판정중</span>
           </div>
           <div class="summary-card">
-            <span class="summary-label">지수조정율</span>
+            <span class="summary-label">최종 지수조정율</span>
             <strong id="sumKRate">0.0000%</strong>
             <span id="sumKBadge" class="pill neutral">판정중</span>
           </div>
           <div class="summary-card highlight">
             <span class="summary-label">최종 조정적용금액</span>
             <strong id="sumAdjustAmount">0 원</strong>
-            <span class="summary-sub">선금급/기타 공제 반영</span>
+            <span class="summary-sub">천원 미만 절사 / 공제 반영</span>
           </div>
         </div>
 
@@ -343,7 +396,7 @@
                 <tr><th>전화</th><td id="a1ManagerPhone"></td><th>ESC 회수</th><td id="a1EscRound"></td></tr>
                 <tr><th>기준일</th><td id="a1BaseDate"></td><th>조정기준일</th><td id="a1AdjustDate"></td></tr>
                 <tr><th>경과일수</th><td id="a1ElapsedDays"></td><th>최종 지수조정율</th><td id="a1KRate"></td></tr>
-                <tr><th>조정금액</th><td id="a1RawAdjustAmount"></td><th>최종 조정적용금액</th><td id="a1AdjustAmount" class="emphasis"></td></tr>
+                <tr><th>산출 조정금액</th><td id="a1RawAdjustAmount"></td><th>최종 조정적용금액</th><td id="a1AdjustAmount" class="emphasis"></td></tr>
               </tbody>
             </table>
             <div class="report-note" id="a1Opinion"></div>
@@ -373,10 +426,10 @@
               <thead>
                 <tr>
                   <th>구분</th>
-                  <th>적용대가(B)</th>
-                  <th>가중치(C=B/합계)</th>
-                  <th>지수조정율(D)</th>
-                  <th>C × D</th>
+                  <th>적용대가</th>
+                  <th>가중치</th>
+                  <th>지수조정율</th>
+                  <th>가중 기여율</th>
                 </tr>
               </thead>
               <tbody>
