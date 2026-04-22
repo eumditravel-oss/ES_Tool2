@@ -222,6 +222,15 @@ function createEmptyItem() {
   };
 }
 
+function ensureSelectedItem() {
+  if (!state.selectedItemId && state.items.length) {
+    state.selectedItemId = state.items[0].id;
+  }
+  if (state.selectedItemId && !state.items.find(item => item.id === state.selectedItemId)) {
+    state.selectedItemId = state.items[0]?.id || null;
+  }
+}
+
 function filteredItemsForWork() {
   const search = $("itemSearch").value.trim().toLowerCase();
   const selectedTrade = getSelectedTradeLabel($("selectedTrade").value);
@@ -239,15 +248,6 @@ function filteredItemsForWork() {
   });
 }
 
-function ensureSelectedItem() {
-  if (!state.selectedItemId && state.items.length) {
-    state.selectedItemId = state.items[0].id;
-  }
-  if (state.selectedItemId && !state.items.find(item => item.id === state.selectedItemId)) {
-    state.selectedItemId = state.items[0]?.id || null;
-  }
-}
-
 function populateSelect(selectId, options) {
   const select = $(selectId);
   select.innerHTML = "";
@@ -257,37 +257,6 @@ function populateSelect(selectId, options) {
     option.textContent = value || "선택";
     select.appendChild(option);
   });
-}
-
-function syncDetailForm() {
-  ensureSelectedItem();
-  const item = state.items.find(v => v.id === state.selectedItemId);
-
-  if (!item) {
-    $("detailEmpty").classList.remove("hidden");
-    $("detailForm").classList.add("hidden");
-    setText("selectedRowLabel", "선택 없음");
-    return;
-  }
-
-  $("detailEmpty").classList.add("hidden");
-  $("detailForm").classList.remove("hidden");
-  setText("selectedRowLabel", `${item.code || "-"} / ${item.name || "미입력"}`);
-
-  DETAIL_FIELDS.forEach((field) => {
-    const el = $(`d_${field}`);
-    if (!el) return;
-    el.value = item[field] ?? "";
-  });
-
-  renderDetailSummary(item);
-}
-
-function renderDetailSummary(item) {
-  setText("detailExpenseTotal", formatNumber(itemExpenseTotal(item)));
-  setText("detailMaterialTotal", formatNumber(itemMaterialTotal(item)));
-  setText("detailStdTotal", formatNumber(itemStdTotal(item)));
-  setText("detailCheckTotal", formatNumber(itemCheckTotal(item)));
 }
 
 function renderCodeList() {
@@ -330,8 +299,99 @@ function renderCodeList() {
       const item = state.items.find(v => v.id === checkbox.dataset.checkId);
       if (!item) return;
       item.checked = checkbox.checked;
+      renderWorkGrid();
+      renderMiniGrid();
     });
   });
+}
+
+function renderWorkGrid() {
+  ensureSelectedItem();
+  const body = $("workGridBody");
+  const items = filteredItemsForWork();
+  setText("gridInfoLabel", `${items.length}행`);
+
+  if (!items.length) {
+    body.innerHTML = `<tr><td colspan="22">조건에 맞는 항목이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = items.map((item) => `
+    <tr class="${item.id === state.selectedItemId ? "active-row" : ""}" data-row-id="${item.id}">
+      <td><input type="checkbox" class="grid-checkbox" data-check-id="${item.id}" ${item.checked ? "checked" : ""}></td>
+      <td><input type="text" data-field="code" data-id="${item.id}" value="${escapeAttr(item.code)}"></td></td>
+      <td>${buildSelectHTML(item.id, "trade", TRADE_OPTIONS, item.trade)}</td>
+      <td>${buildSelectHTML(item.id, "category", CATEGORY_OPTIONS, item.category)}</td>
+      <td><input type="text" data-field="name" data-id="${item.id}" value="${escapeAttr(item.name)}"></td>
+      <td><input type="text" data-field="spec" data-id="${item.id}" value="${escapeAttr(item.spec)}"></td>
+      <td><input type="text" data-field="unit" data-id="${item.id}" value="${escapeAttr(item.unit)}"></td>
+      <td><input type="number" data-field="total" data-id="${item.id}" value="${item.total ?? 0}"></td>
+      <td><input type="number" data-field="labor" data-id="${item.id}" value="${item.labor ?? 0}"></td>
+      <td><input type="number" data-field="machineDomestic" data-id="${item.id}" value="${item.machineDomestic ?? 0}"></td>
+      <td><input type="number" data-field="machineForeign" data-id="${item.id}" value="${item.machineForeign ?? 0}"></td>
+      <td><input type="number" data-field="misc" data-id="${item.id}" value="${item.misc ?? 0}"></td>
+      <td><input type="number" data-field="mine" data-id="${item.id}" value="${item.mine ?? 0}"></td>
+      <td><input type="number" data-field="manufacture" data-id="${item.id}" value="${item.manufacture ?? 0}"></td>
+      <td><input type="number" data-field="utility" data-id="${item.id}" value="${item.utility ?? 0}"></td>
+      <td><input type="number" data-field="agri" data-id="${item.id}" value="${item.agri ?? 0}"></td>
+      <td><input type="number" data-field="g1" data-id="${item.id}" value="${item.g1 ?? 0}"></td>
+      <td><input type="number" data-field="g2" data-id="${item.id}" value="${item.g2 ?? 0}"></td>
+      <td><input type="number" data-field="g3" data-id="${item.id}" value="${item.g3 ?? 0}"></td>
+      <td><input type="number" data-field="g4" data-id="${item.id}" value="${item.g4 ?? 0}"></td>
+      <td><input type="number" data-field="g5" data-id="${item.id}" value="${item.g5 ?? 0}"></td>
+      <td><input type="text" data-field="note" data-id="${item.id}" value="${escapeAttr(item.note)}"></td>
+    </tr>
+  `).join("");
+
+  body.querySelectorAll("tr[data-row-id]").forEach((tr) => {
+    tr.addEventListener("click", (e) => {
+      if (e.target.matches("input, select")) return;
+      state.selectedItemId = tr.dataset.rowId;
+      renderEstimateWorkspace();
+    });
+  });
+
+  body.querySelectorAll(".grid-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      const item = state.items.find(v => v.id === checkbox.dataset.checkId);
+      if (!item) return;
+      item.checked = checkbox.checked;
+      renderCodeList();
+      renderMiniGrid();
+    });
+  });
+
+  body.querySelectorAll("[data-field][data-id]").forEach((input) => {
+    const field = input.dataset.field;
+    const id = input.dataset.id;
+    const numberFields = [
+      "total","labor","machineDomestic","machineForeign","misc","mine",
+      "manufacture","utility","agri","g1","g2","g3","g4","g5"
+    ];
+    const isNumber = numberFields.includes(field);
+
+    const handler = () => {
+      const item = state.items.find(v => v.id === id);
+      if (!item) return;
+      item[field] = isNumber ? toNumber(input.value) : input.value;
+      state.selectedItemId = id;
+      syncDetailForm();
+      renderCodeList();
+      renderMiniGrid();
+      renderAllReportsOnly();
+    };
+
+    input.addEventListener("input", handler);
+    input.addEventListener("change", handler);
+  });
+}
+
+function buildSelectHTML(id, field, options, selected) {
+  return `
+    <select data-field="${field}" data-id="${id}">
+      ${options.map(option => `<option value="${escapeAttr(option)}" ${option === selected ? "selected" : ""}>${option || "선택"}</option>`).join("")}
+    </select>
+  `;
 }
 
 function renderMiniGrid() {
@@ -339,39 +399,56 @@ function renderMiniGrid() {
   const items = filteredItemsForWork();
 
   if (!items.length) {
-    body.innerHTML = `<tr><td colspan="12">조건에 맞는 항목이 없습니다.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6">조건에 맞는 항목이 없습니다.</td></tr>`;
     return;
   }
 
-  body.innerHTML = items.map((item) => `
+  body.innerHTML = items.slice(0, 12).map((item) => `
     <tr>
-      <td><input type="checkbox" data-mini-check="${item.id}" ${item.checked ? "checked" : ""}></td>
       <td>${item.code || "-"}</td>
-      <td>${item.trade || "-"}</td>
-      <td>${item.category || "-"}</td>
       <td>${item.name || "-"}</td>
-      <td>${item.spec || "-"}</td>
-      <td>${item.unit || "-"}</td>
       <td>${formatNumber(item.total)}</td>
-      <td>${formatNumber(item.labor)}</td>
       <td>${formatNumber(itemExpenseTotal(item))}</td>
       <td>${formatNumber(itemMaterialTotal(item))}</td>
       <td>${formatNumber(itemStdTotal(item))}</td>
     </tr>
   `).join("");
+}
 
-  body.querySelectorAll("[data-mini-check]").forEach((checkbox) => {
-    checkbox.addEventListener("change", () => {
-      const item = state.items.find(v => v.id === checkbox.dataset.miniCheck);
-      if (!item) return;
-      item.checked = checkbox.checked;
-      renderCodeList();
-    });
+function syncDetailForm() {
+  ensureSelectedItem();
+  const item = state.items.find(v => v.id === state.selectedItemId);
+
+  if (!item) {
+    $("detailEmpty").classList.remove("hidden");
+    $("detailForm").classList.add("hidden");
+    setText("selectedRowLabel", "선택 없음");
+    return;
+  }
+
+  $("detailEmpty").classList.add("hidden");
+  $("detailForm").classList.remove("hidden");
+  setText("selectedRowLabel", `${item.code || "-"} / ${item.name || "미입력"}`);
+
+  DETAIL_FIELDS.forEach((field) => {
+    const el = $(`d_${field}`);
+    if (!el) return;
+    el.value = item[field] ?? "";
   });
+
+  renderDetailSummary(item);
+}
+
+function renderDetailSummary(item) {
+  setText("detailExpenseTotal", formatNumber(itemExpenseTotal(item)));
+  setText("detailMaterialTotal", formatNumber(itemMaterialTotal(item)));
+  setText("detailStdTotal", formatNumber(itemStdTotal(item)));
+  setText("detailCheckTotal", formatNumber(itemCheckTotal(item)));
 }
 
 function renderEstimateWorkspace() {
   renderCodeList();
+  renderWorkGrid();
   syncDetailForm();
   renderMiniGrid();
 }
@@ -384,10 +461,11 @@ function bindDetailFormEvents() {
     const el = $(`d_${field}`);
     if (!el) return;
 
-    const isNumber = [
+    const numberFields = [
       "total","labor","machineDomestic","machineForeign","misc","mine",
       "manufacture","utility","agri","g1","g2","g3","g4","g5"
-    ].includes(field);
+    ];
+    const isNumber = numberFields.includes(field);
 
     el.addEventListener("input", () => {
       const item = state.items.find(v => v.id === state.selectedItemId);
@@ -417,6 +495,19 @@ function addItem() {
   renderAllReportsOnly();
 }
 
+function insertBelowSelected() {
+  const item = createEmptyItem();
+  const index = state.items.findIndex(v => v.id === state.selectedItemId);
+  if (index === -1) {
+    state.items.push(item);
+  } else {
+    state.items.splice(index + 1, 0, item);
+  }
+  state.selectedItemId = item.id;
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
 function duplicateSelectedItem() {
   const item = state.items.find(v => v.id === state.selectedItemId);
   if (!item) {
@@ -432,7 +523,8 @@ function duplicateSelectedItem() {
     checked: false
   };
 
-  state.items.push(clone);
+  const index = state.items.findIndex(v => v.id === item.id);
+  state.items.splice(index + 1, 0, clone);
   state.selectedItemId = clone.id;
   renderEstimateWorkspace();
   renderAllReportsOnly();
@@ -467,12 +559,12 @@ function generateCodeForSelected() {
 }
 
 function saveItemsOnly() {
-  localStorage.setItem("esc_items_only_v1", JSON.stringify(state.items));
+  localStorage.setItem("esc_items_only_v2", JSON.stringify(state.items));
   alert("내역서를 저장했습니다.");
 }
 
 function loadItemsOnly() {
-  const raw = localStorage.getItem("esc_items_only_v1");
+  const raw = localStorage.getItem("esc_items_only_v2");
   if (!raw) {
     alert("저장된 내역서가 없습니다.");
     return;
@@ -500,7 +592,8 @@ function buildTitle(baseTitle, tradeNumber, categoryNumber) {
 function collectData() {
   const data = {};
   INPUT_IDS.forEach((id) => {
-    data[id] = $(id).value;
+    const el = $(id);
+    if (el) data[id] = el.value;
   });
 
   data.escRound = Math.max(toNumber(data.escRound), 1);
@@ -757,7 +850,7 @@ function saveDraft() {
     if (el) saved[id] = el.value;
   });
 
-  localStorage.setItem("esc_report_form_v4", JSON.stringify({
+  localStorage.setItem("esc_report_form_v5", JSON.stringify({
     fields: saved,
     items: state.items,
     selectedItemId: state.selectedItemId
@@ -767,7 +860,7 @@ function saveDraft() {
 }
 
 function loadDraft() {
-  const raw = localStorage.getItem("esc_report_form_v4");
+  const raw = localStorage.getItem("esc_report_form_v5");
   if (!raw) {
     alert("저장된 입력값이 없습니다.");
     return;
@@ -798,40 +891,16 @@ function bindGeneralInputEvents() {
   });
 }
 
-function bindDetailFormEvents() {
-  populateSelect("d_trade", TRADE_OPTIONS);
-  populateSelect("d_category", CATEGORY_OPTIONS);
-
-  DETAIL_FIELDS.forEach((field) => {
-    const el = $(`d_${field}`);
-    if (!el) return;
-
-    const numberFields = [
-      "total","labor","machineDomestic","machineForeign","misc","mine",
-      "manufacture","utility","agri","g1","g2","g3","g4","g5"
-    ];
-
-    const isNumber = numberFields.includes(field);
-
-    el.addEventListener("input", () => {
-      const item = state.items.find(v => v.id === state.selectedItemId);
-      if (!item) return;
-      item[field] = isNumber ? toNumber(el.value) : el.value;
-      renderEstimateWorkspace();
-      renderAllReportsOnly();
-    });
-
-    el.addEventListener("change", () => {
-      const item = state.items.find(v => v.id === state.selectedItemId);
-      if (!item) return;
-      item[field] = isNumber ? toNumber(el.value) : el.value;
-      renderEstimateWorkspace();
-      renderAllReportsOnly();
-    });
-  });
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 $("addItemBtn").addEventListener("click", addItem);
+$("insertBelowBtn").addEventListener("click", insertBelowSelected);
 $("duplicateItemBtn").addEventListener("click", duplicateSelectedItem);
 $("deleteSelectedBtn").addEventListener("click", deleteCheckedItems);
 $("generateCodeBtn").addEventListener("click", generateCodeForSelected);
