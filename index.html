@@ -12,7 +12,7 @@
     <aside class="sidebar">
       <div class="sidebar-top">
         <h1>ESC 보고서</h1>
-        <p>상세입력 / 결과보고서 / 붙임9·10 작성</p>
+        <p>상세입력 / 결과보고서 / 붙임1~10</p>
       </div>
 
       <div class="step-box">
@@ -40,7 +40,7 @@
       <section class="screen active" id="inputScreen">
         <div class="screen-header">
           <h2>상세입력</h2>
-          <p>기준시점, 비교시점, K값, 내역서 항목을 먼저 입력한 뒤 결과 보고서로 이동합니다.</p>
+          <p>엑셀 원본의 기초 / 시점 / K값 / 붙임9·10 입력 흐름을 기준으로 입력 후 보고서를 생성합니다.</p>
         </div>
 
         <div class="tab-nav">
@@ -73,6 +73,9 @@
                 <label>계약방법
                   <input type="text" id="contractMethod" value="일반경쟁" />
                 </label>
+                <label>발주처 구분
+                  <input type="text" id="orderType" value="일반" />
+                </label>
                 <label>기술부서
                   <input type="text" id="techDept" value="시설과" />
                 </label>
@@ -99,6 +102,12 @@
                 </label>
                 <label>기타 공제금액
                   <input type="number" id="etcDeduction" value="0" />
+                </label>
+                <label>안전관리비율(%)
+                  <input type="number" id="safetyRate" value="1.86" step="0.01" />
+                </label>
+                <label>고용보험 등급
+                  <input type="text" id="employmentGrade" value="7등급" />
                 </label>
                 <label>예정 공정율(%)
                   <input type="number" id="plannedProgress" value="52.40" step="0.01" />
@@ -180,7 +189,6 @@
           <section class="tab-panel" id="kTab">
             <div class="card">
               <h3>K0 ~ K3 지수조정율 산정 입력</h3>
-
               <div class="k-grid">
                 <div class="k-card">
                   <h4>기존비목(K0)</h4>
@@ -235,7 +243,7 @@
               <div class="estimate-head">
                 <div>
                   <h3>붙임9 · 붙임10 산출화면</h3>
-                  <p>FIN2 스타일로 코드 나열, 대량 입력, 상세 수정이 가능한 작업형 화면입니다.</p>
+                  <p>현재 사용 중인 코드 구조를 유지하면서 FIN2 스타일의 코드목록 + Grid + 상세입력 구조로 구성했습니다.</p>
                 </div>
               </div>
 
@@ -308,7 +316,7 @@
                     <span id="gridInfoLabel">0행</span>
                   </div>
                   <div class="grid-wrap">
-                    <table class="work-grid" id="workGrid">
+                    <table class="work-grid">
                       <thead>
                         <tr>
                           <th class="col-check">선택</th>
@@ -486,6 +494,14 @@
           <a href="#attach1">붙임1</a>
           <a href="#attach2">붙임2</a>
           <a href="#attach21">붙임2-1</a>
+          <a href="#attach3">붙임3</a>
+          <a href="#attach4">붙임4</a>
+          <a href="#attach5">붙임5</a>
+          <a href="#attach6">붙임6</a>
+          <a href="#attach61">붙임6-1</a>
+          <a href="#attach62">붙임6-2</a>
+          <a href="#attach7">붙임7</a>
+          <a href="#attach8">붙임8</a>
           <a href="#attach9">붙임9</a>
           <a href="#attach10">붙임10</a>
         </nav>
@@ -517,7 +533,14 @@
               <tbody>
                 <tr><td class="num">1.</td><td>물가변동으로 인한 계약금액 조정에 대한 종합의견서</td></tr>
                 <tr><td class="num">2.</td><td>물가변동으로 인한 계약금액 조정내역 총괄표</td></tr>
-                <tr><td class="num">2-1.</td><td>물가변동 지수조정율 산정표</td></tr>
+                <tr><td class="num">3.</td><td>물가변동 조정율(지수조정율) 산출표</td></tr>
+                <tr><td class="num">4.</td><td>물가변동에 적용한 각종지수의 산정표</td></tr>
+                <tr><td class="num">5.</td><td>물가변동 적용대가 집계표</td></tr>
+                <tr><td class="num">6.</td><td>물가변동 적용대가 분류 내역서</td></tr>
+                <tr><td class="num">6-1.</td><td>물가변동 적용대가 분류 내역서</td></tr>
+                <tr><td class="num">6-2.</td><td>물가변동 적용대가 산출근거</td></tr>
+                <tr><td class="num">7.</td><td>물가변동 적용대가의 비목군 분류 집계표</td></tr>
+                <tr><td class="num">8.</td><td>물가변동 적용대가의 비목군 분류표</td></tr>
                 <tr><td class="num">9.</td><td>물가변동 적용대가의 비목군 분류 일위대가표</td></tr>
                 <tr><td class="num">10.</td><td>물가변동 적용대가의 비목군 분류 산출근거</td></tr>
               </tbody>
@@ -546,10 +569,15 @@
             <div class="mini-project-title" id="a2ProjectTitle"></div>
             <div class="attach-label">[ 붙임 2 ]</div>
             <h2 class="doc-heading">물가변동으로 인한 계약금액 조정내역 총괄표</h2>
+            <div class="judge-lines">
+              <div id="a2JudgeLine1"></div>
+              <div id="a2JudgeLine2"></div>
+            </div>
             <table class="report-table">
               <tbody>
                 <tr><th>총계약금액(B)</th><td id="a2B"></td><th>물가변동 적용제외금액(C)</th><td id="a2C"></td></tr>
                 <tr><th>C1 적용제외금액</th><td id="a2C1"></td><th>C2 직불노무비</th><td id="a2C2"></td></tr>
+                <tr><th>예정 공정율</th><td id="a2PlanProgress"></td><th>실행 공정율</th><td id="a2ActualProgress"></td></tr>
                 <tr><th>물가변동 적용대가(D)</th><td id="a2D"></td><th>경과일수</th><td id="a2Days"></td></tr>
                 <tr><th>최종 지수조정율</th><td id="a2KRate"></td><th>산출 조정금액</th><td id="a2RawAdjust"></td></tr>
                 <tr><th>선금급 공제</th><td id="a2Advance"></td><th>기타 공제</th><td id="a2Etc"></td></tr>
@@ -560,25 +588,205 @@
 
           <section class="paper" id="attach21">
             <div class="mini-project-title" id="a21ProjectTitle"></div>
-            <div class="attach-label">[ 붙임 2-1 ]</div>
+            <div class="attach-label">[ 붙임 2 ]</div>
             <h2 class="doc-heading">물가변동 지수조정율 산정표</h2>
             <table class="report-table">
               <thead>
                 <tr>
                   <th>구분</th>
-                  <th>적용대가</th>
-                  <th>가중치</th>
-                  <th>지수조정율</th>
-                  <th>가중 결과</th>
+                  <th>물가변동 적용대가</th>
+                  <th>금액가중치(A)</th>
+                  <th>지수조정율(K)</th>
+                  <th>(A) × (K)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>기존비목(K0)</td><td id="a21K0Amount"></td><td id="a21K0Weight"></td><td id="a21K0Rate"></td><td id="a21K0Result"></td></tr>
-                <tr><td>신규비목(K1)</td><td id="a21K1Amount"></td><td id="a21K1Weight"></td><td id="a21K1Rate"></td><td id="a21K1Result"></td></tr>
-                <tr><td>신규비목(K2)</td><td id="a21K2Amount"></td><td id="a21K2Weight"></td><td id="a21K2Rate"></td><td id="a21K2Result"></td></tr>
-                <tr><td>신규비목(K3)</td><td id="a21K3Amount"></td><td id="a21K3Weight"></td><td id="a21K3Rate"></td><td id="a21K3Result"></td></tr>
-                <tr class="total-row"><td>합계</td><td id="a21TotalAmount"></td><td id="a21TotalWeight"></td><td>최종 K</td><td id="a21FinalK"></td></tr>
+                <tr><td id="a21K0Label"></td><td id="a21K0Amount"></td><td id="a21K0Weight"></td><td id="a21K0Rate"></td><td id="a21K0Result"></td></tr>
+                <tr><td id="a21K1Label"></td><td id="a21K1Amount"></td><td id="a21K1Weight"></td><td id="a21K1Rate"></td><td id="a21K1Result"></td></tr>
+                <tr><td id="a21K2Label"></td><td id="a21K2Amount"></td><td id="a21K2Weight"></td><td id="a21K2Rate"></td><td id="a21K2Result"></td></tr>
+                <tr><td id="a21K3Label"></td><td id="a21K3Amount"></td><td id="a21K3Weight"></td><td id="a21K3Rate"></td><td id="a21K3Result"></td></tr>
+                <tr class="total-row"><td>합 계</td><td id="a21TotalAmount"></td><td id="a21TotalWeight"></td><td>∴ 지수조정율</td><td id="a21FinalK"></td></tr>
               </tbody>
+            </table>
+          </section>
+
+          <section class="paper" id="attach3">
+            <div class="mini-project-title" id="a3ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 3 ]</div>
+            <h2 class="doc-heading">물가변동 조정율(지수조정율) 산출표</h2>
+            <table class="report-table wide-table">
+              <thead>
+                <tr>
+                  <th>비목군</th>
+                  <th>적용대가</th>
+                  <th>계수(C)</th>
+                  <th>기준지수(D)</th>
+                  <th>비교지수(E)</th>
+                  <th>지수변동율(F=E/D)</th>
+                  <th>비목군조정계수(G=C×F)</th>
+                </tr>
+              </thead>
+              <tbody id="attach3Body"></tbody>
+            </table>
+          </section>
+
+          <section class="paper" id="attach4">
+            <div class="mini-project-title" id="a4ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 4 ]</div>
+            <h2 class="doc-heading">물가변동에 적용한 각종지수의 산정표</h2>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>항목</th>
+                  <th>기준시점</th>
+                  <th>비교시점</th>
+                  <th>산정지수</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>1. 노무비 지수(A)</td><td id="a4LaborBase"></td><td id="a4LaborCompare"></td><td id="a4LaborIndex"></td></tr>
+                <tr><td>2. 기계경비 지수(B)</td><td id="a4MachineBase"></td><td id="a4MachineCompare"></td><td id="a4MachineIndex"></td></tr>
+                <tr><td>3. 재료비 지수(C, D, E, F)</td><td id="a4MaterialBase"></td><td id="a4MaterialCompare"></td><td id="a4MaterialIndex"></td></tr>
+                <tr><td>4. 표준시장단가 지수(G)</td><td id="a4StdBase"></td><td id="a4StdCompare"></td><td id="a4StdIndex"></td></tr>
+                <tr><td>5. 산재보험료 지수(H)</td><td id="a4EtcBase"></td><td id="a4EtcCompare"></td><td id="a4EtcIndex"></td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="paper" id="attach5">
+            <div class="mini-project-title" id="a5ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 5 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가 집계표</h2>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>구분</th>
+                  <th>금액</th>
+                  <th>비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>총계약금액</td><td id="a5Contract"></td><td>총 도급 계약금액</td></tr>
+                <tr><td>적용제외금액(C1)</td><td id="a5Excluded1"></td><td>물가변동 적용 제외</td></tr>
+                <tr><td>직불노무비(C2)</td><td id="a5Excluded2"></td><td>직불노무비</td></tr>
+                <tr><td>물가변동 적용대가(D)</td><td id="a5Applicable"></td><td>총계약금액 - 적용제외금액</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="paper" id="attach6">
+            <div class="mini-project-title" id="a6ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 6 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가 분류 내역서</h2>
+            <div class="table-wrap report-wrap">
+              <table class="report-table wide-table">
+                <thead>
+                  <tr>
+                    <th>코드</th>
+                    <th>공종</th>
+                    <th>신규구분</th>
+                    <th>공종명</th>
+                    <th>규격</th>
+                    <th>단위</th>
+                    <th>합계</th>
+                    <th>노무비</th>
+                    <th>경비계</th>
+                    <th>재료비계</th>
+                    <th>표준시장단가계</th>
+                  </tr>
+                </thead>
+                <tbody id="attach6Body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="paper" id="attach61">
+            <div class="mini-project-title" id="a61ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 6-1 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가 분류 내역서</h2>
+            <div class="table-wrap report-wrap">
+              <table class="report-table wide-table">
+                <thead>
+                  <tr>
+                    <th>코드</th>
+                    <th>공종</th>
+                    <th>신규구분</th>
+                    <th>공종명</th>
+                    <th>합계</th>
+                    <th>노무비</th>
+                    <th>재료비</th>
+                    <th>기타</th>
+                  </tr>
+                </thead>
+                <tbody id="attach61Body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="paper" id="attach62">
+            <div class="mini-project-title" id="a62ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 6-2 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가 산출근거</h2>
+            <div class="table-wrap report-wrap">
+              <table class="report-table wide-table detail-table">
+                <thead>
+                  <tr>
+                    <th>코드</th>
+                    <th>공종</th>
+                    <th>신규구분</th>
+                    <th>공종명</th>
+                    <th>규격</th>
+                    <th>단위</th>
+                    <th>합계</th>
+                    <th>노무비(A)</th>
+                    <th>국산장비(B')</th>
+                    <th>외산장비(B'')</th>
+                    <th>기타경비(Z)</th>
+                    <th>광산품(C)</th>
+                    <th>공산품(D)</th>
+                    <th>전력수도(E)</th>
+                    <th>농림수산(F)</th>
+                    <th>G1</th>
+                    <th>G2</th>
+                    <th>G3</th>
+                    <th>G4</th>
+                    <th>G5</th>
+                    <th>비고</th>
+                  </tr>
+                </thead>
+                <tbody id="attach62Body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="paper" id="attach7">
+            <div class="mini-project-title" id="a7ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 7 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가의 비목군 분류 집계표</h2>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>비목군</th>
+                  <th>금액</th>
+                </tr>
+              </thead>
+              <tbody id="attach7Body"></tbody>
+            </table>
+          </section>
+
+          <section class="paper" id="attach8">
+            <div class="mini-project-title" id="a8ProjectTitle"></div>
+            <div class="attach-label">[ 붙임 8 ]</div>
+            <h2 class="doc-heading">물가변동 적용대가의 비목군 분류표</h2>
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>비목군</th>
+                  <th>금액</th>
+                  <th>구성비</th>
+                </tr>
+              </thead>
+              <tbody id="attach8Body"></tbody>
             </table>
           </section>
 
