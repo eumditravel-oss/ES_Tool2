@@ -37,7 +37,6 @@
     </aside>
 
     <main class="main">
-      <!-- STEP 1 -->
       <section class="screen active" id="inputScreen">
         <div class="screen-header">
           <h2>상세입력</h2>
@@ -52,7 +51,6 @@
         </div>
 
         <div class="tab-content">
-          <!-- 기본정보 -->
           <section class="tab-panel active" id="basicTab">
             <div class="card">
               <h3>기본 정보</h3>
@@ -112,7 +110,6 @@
             </div>
           </section>
 
-          <!-- 시점/판정 -->
           <section class="tab-panel" id="timelineTab">
             <div class="card">
               <h3>기준시점 / 비교시점 / 판정 입력</h3>
@@ -180,7 +177,6 @@
             </div>
           </section>
 
-          <!-- K -->
           <section class="tab-panel" id="kTab">
             <div class="card">
               <h3>K0 ~ K3 지수조정율 산정 입력</h3>
@@ -234,20 +230,19 @@
             </div>
           </section>
 
-          <!-- items -->
           <section class="tab-panel" id="itemsTab">
             <div class="estimate-card">
               <div class="estimate-head">
                 <div>
                   <h3>붙임9 · 붙임10 산출화면</h3>
-                  <p>코드 생성, 항목 추가, 상세 편집이 가능한 작업형 화면입니다.</p>
+                  <p>FIN2 스타일로 코드 나열, 대량 입력, 상세 수정이 가능한 작업형 화면입니다.</p>
                 </div>
               </div>
 
               <div class="estimate-toolbar">
                 <div class="toolbar-row">
                   <div class="toolbar-group">
-                    <label>공종 선택</label>
+                    <label>공종 필터</label>
                     <select id="selectedTrade">
                       <option value="1">전체</option>
                       <option value="2">건축</option>
@@ -262,7 +257,7 @@
                   </div>
 
                   <div class="toolbar-group">
-                    <label>신규구분 선택</label>
+                    <label>신규구분 필터</label>
                     <select id="selectedCategory">
                       <option value="1">전체</option>
                       <option value="2">기존비목(K0)</option>
@@ -276,34 +271,73 @@
                     </select>
                   </div>
 
-                  <div class="toolbar-group">
+                  <div class="toolbar-group small-field">
                     <label>코드 접두어</label>
                     <input type="text" id="codePrefix" value="A" />
                   </div>
 
                   <div class="toolbar-group">
                     <label>검색</label>
-                    <input type="text" id="itemSearch" placeholder="코드 / 공종명 검색" />
+                    <input type="text" id="itemSearch" placeholder="코드 / 공종명 / 규격 검색" />
                   </div>
                 </div>
 
                 <div class="toolbar-actions">
-                  <button type="button" class="btn primary small" id="generateCodeBtn">코드 생성</button>
-                  <button type="button" class="btn small" id="addItemBtn">행 추가</button>
+                  <button type="button" class="btn primary small" id="addItemBtn">행 추가</button>
+                  <button type="button" class="btn small" id="insertBelowBtn">아래 삽입</button>
                   <button type="button" class="btn small" id="duplicateItemBtn">행 복제</button>
+                  <button type="button" class="btn small" id="generateCodeBtn">코드 생성</button>
                   <button type="button" class="btn small danger" id="deleteSelectedBtn">선택 삭제</button>
                   <button type="button" class="btn small" id="saveItemsBtn">내역서 저장</button>
                   <button type="button" class="btn small" id="loadItemsBtn">내역서 불러오기</button>
                 </div>
               </div>
 
-              <div class="estimate-layout">
+              <div class="estimate-layout fin2-layout">
                 <div class="estimate-left">
                   <div class="panel-title-row">
                     <h4>코드 목록</h4>
                     <span id="itemCountLabel">0건</span>
                   </div>
-                  <div class="code-list" id="codeList"></div>
+                  <div class="code-list compact-list" id="codeList"></div>
+                </div>
+
+                <div class="estimate-center">
+                  <div class="panel-title-row">
+                    <h4>산출 Grid</h4>
+                    <span id="gridInfoLabel">0행</span>
+                  </div>
+                  <div class="grid-wrap">
+                    <table class="work-grid" id="workGrid">
+                      <thead>
+                        <tr>
+                          <th class="col-check">선택</th>
+                          <th class="col-code">코드</th>
+                          <th class="col-trade">공종</th>
+                          <th class="col-category">신규구분</th>
+                          <th class="col-name">공종명</th>
+                          <th class="col-spec">규격</th>
+                          <th class="col-unit">단위</th>
+                          <th class="col-num">합계</th>
+                          <th class="col-num">노무비(A)</th>
+                          <th class="col-num">국산장비(B')</th>
+                          <th class="col-num">외산장비(B'')</th>
+                          <th class="col-num">기타경비(Z)</th>
+                          <th class="col-num">광산품(C)</th>
+                          <th class="col-num">공산품(D)</th>
+                          <th class="col-num">전력수도(E)</th>
+                          <th class="col-num">농림수산(F)</th>
+                          <th class="col-num">G1</th>
+                          <th class="col-num">G2</th>
+                          <th class="col-num">G3</th>
+                          <th class="col-num">G4</th>
+                          <th class="col-num">G5</th>
+                          <th class="col-note">비고</th>
+                        </tr>
+                      </thead>
+                      <tbody id="workGridBody"></tbody>
+                    </table>
+                  </div>
                 </div>
 
                 <div class="estimate-right">
@@ -313,13 +347,16 @@
                   </div>
 
                   <div class="detail-empty" id="detailEmpty">
-                    좌측 코드 목록에서 항목을 선택하면 상세입력이 가능합니다.
+                    중앙 Grid 또는 좌측 코드 목록에서 항목을 선택하면 상세입력이 가능합니다.
                   </div>
 
                   <div class="detail-form hidden" id="detailForm">
-                    <div class="detail-grid cols-4">
+                    <div class="detail-grid cols-2">
                       <label>코드
                         <input type="text" id="d_code" />
+                      </label>
+                      <label>단위
+                        <input type="text" id="d_unit" />
                       </label>
                       <label>공종
                         <select id="d_trade"></select>
@@ -327,10 +364,6 @@
                       <label>신규구분
                         <select id="d_category"></select>
                       </label>
-                      <label>단위
-                        <input type="text" id="d_unit" />
-                      </label>
-
                       <label class="span-2">공종명
                         <input type="text" id="d_name" />
                       </label>
@@ -350,7 +383,6 @@
                       <label>외산장비(B'')
                         <input type="number" id="d_machineForeign" />
                       </label>
-
                       <label>기타경비(Z)
                         <input type="number" id="d_misc" />
                       </label>
@@ -363,7 +395,6 @@
                       <label>전력수도(E)
                         <input type="number" id="d_utility" />
                       </label>
-
                       <label>농림수산(F)
                         <input type="number" id="d_agri" />
                       </label>
@@ -376,7 +407,6 @@
                       <label>G3
                         <input type="number" id="d_g3" />
                       </label>
-
                       <label>G4
                         <input type="number" id="d_g4" />
                       </label>
@@ -407,19 +437,13 @@
                       </div>
                     </div>
 
-                    <div class="estimate-grid-wrap">
+                    <div class="summary-mini-table">
                       <table class="mini-grid">
                         <thead>
                           <tr>
-                            <th>선택</th>
                             <th>코드</th>
-                            <th>공종</th>
-                            <th>신규구분</th>
                             <th>공종명</th>
-                            <th>규격</th>
-                            <th>단위</th>
                             <th>합계</th>
-                            <th>노무비</th>
                             <th>경비계</th>
                             <th>재료비계</th>
                             <th>표준시장단가계</th>
@@ -436,7 +460,6 @@
         </div>
       </section>
 
-      <!-- STEP 2 -->
       <section class="screen" id="reportScreen">
         <section class="summary-strip">
           <div class="summary-card">
@@ -505,7 +528,6 @@
             <div class="mini-project-title" id="a1ProjectTitle"></div>
             <div class="attach-label">[ 붙임 1 ]</div>
             <h2 class="doc-heading">물가변동으로 인한 계약금액 조정에 대한 종합의견서</h2>
-
             <table class="report-table">
               <tbody>
                 <tr><th>수요기관</th><td id="a1DemandOrg"></td><th>공사명</th><td id="a1ContractName"></td></tr>
@@ -517,7 +539,6 @@
                 <tr><th>산출 조정금액</th><td id="a1RawAdjust"></td><th>최종 조정적용금액</th><td id="a1FinalAdjust" class="emphasis"></td></tr>
               </tbody>
             </table>
-
             <div class="report-note" id="a1Opinion"></div>
           </section>
 
@@ -525,7 +546,6 @@
             <div class="mini-project-title" id="a2ProjectTitle"></div>
             <div class="attach-label">[ 붙임 2 ]</div>
             <h2 class="doc-heading">물가변동으로 인한 계약금액 조정내역 총괄표</h2>
-
             <table class="report-table">
               <tbody>
                 <tr><th>총계약금액(B)</th><td id="a2B"></td><th>물가변동 적용제외금액(C)</th><td id="a2C"></td></tr>
@@ -542,7 +562,6 @@
             <div class="mini-project-title" id="a21ProjectTitle"></div>
             <div class="attach-label">[ 붙임 2-1 ]</div>
             <h2 class="doc-heading">물가변동 지수조정율 산정표</h2>
-
             <table class="report-table">
               <thead>
                 <tr>
@@ -567,7 +586,6 @@
             <div class="mini-project-title" id="a9ProjectTitle"></div>
             <div class="attach-label">[ 붙임 9 ]</div>
             <h2 class="doc-heading" id="attach9Title"></h2>
-
             <div class="table-wrap report-wrap">
               <table class="report-table wide-table">
                 <thead>
@@ -596,7 +614,6 @@
             <div class="mini-project-title" id="a10ProjectTitle"></div>
             <div class="attach-label">[ 붙임 10 ]</div>
             <h2 class="doc-heading" id="attach10Title"></h2>
-
             <div class="table-wrap report-wrap">
               <table class="report-table wide-table detail-table">
                 <thead>
