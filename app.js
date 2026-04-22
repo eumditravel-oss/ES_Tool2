@@ -25,9 +25,13 @@ const CATEGORY_MAP = {
   9: "신규비목(K7)"
 };
 
+const TRADE_OPTIONS = ["", "건축", "토목", "기계", "기계설비", "전기", "통신", "소방", "조경"];
+const CATEGORY_OPTIONS = ["", "기존비목(K0)", "신규비목(K1)", "신규비목(K2)", "신규비목(K3)", "신규비목(K4)", "신규비목(K5)", "신규비목(K6)", "신규비목(K7)"];
+
 const state = {
   items: [
     {
+      id: cryptoRandom(),
       code: "A-001",
       trade: "건축",
       category: "기존비목(K0)",
@@ -48,56 +52,34 @@ const state = {
       g3: 0,
       g4: 0,
       g5: 0,
-      note: "기본 예시"
+      note: "기본 예시",
+      checked: false
     }
-  ]
+  ],
+  selectedItemId: null
 };
 
 const INPUT_IDS = [
-  "escRound",
-  "reportDate",
-  "demandOrg",
-  "contractName",
-  "contractor",
-  "contractMethod",
-  "techDept",
-  "managerName",
-  "managerTitle",
-  "managerPhone",
-  "contractAmount",
-  "excludedAmount1",
-  "directLaborAmount",
-  "advanceDeduction",
-  "etcDeduction",
-  "plannedProgress",
-  "actualProgress",
-  "bidDate",
-  "contractDate",
-  "adjustDate",
-  "prevAdjustDate",
-  "baseLaborIndex",
-  "compareLaborIndex",
-  "baseMineIndex",
-  "compareMineIndex",
-  "baseManufactureIndex",
-  "compareManufactureIndex",
-  "baseUtilityIndex",
-  "compareUtilityIndex",
-  "baseAgriIndex",
-  "compareAgriIndex",
-  "basePublishedMonth",
-  "comparePublishedMonth",
-  "k0Amount",
-  "k1Amount",
-  "k2Amount",
-  "k3Amount",
-  "k0Rate",
-  "k1Rate",
-  "k2Rate",
-  "k3Rate",
-  "selectedTrade",
-  "selectedCategory"
+  "escRound","reportDate","demandOrg","contractName","contractor","contractMethod",
+  "techDept","managerName","managerTitle","managerPhone","contractAmount",
+  "excludedAmount1","directLaborAmount","advanceDeduction","etcDeduction",
+  "plannedProgress","actualProgress","bidDate","contractDate","adjustDate","prevAdjustDate",
+  "baseLaborIndex","compareLaborIndex","baseMineIndex","compareMineIndex",
+  "baseManufactureIndex","compareManufactureIndex","baseUtilityIndex","compareUtilityIndex",
+  "baseAgriIndex","compareAgriIndex","basePublishedMonth","comparePublishedMonth",
+  "k0Amount","k1Amount","k2Amount","k3Amount","k0Rate","k1Rate","k2Rate","k3Rate",
+  "selectedTrade","selectedCategory","codePrefix","itemSearch"
 ];
+
+const DETAIL_FIELDS = [
+  "code","trade","category","name","spec","unit","total","labor",
+  "machineDomestic","machineForeign","misc","mine","manufacture","utility",
+  "agri","g1","g2","g3","g4","g5","note"
+];
+
+function cryptoRandom() {
+  return `id_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function toNumber(value) {
   const num = Number(value);
@@ -106,6 +88,10 @@ function toNumber(value) {
 
 function formatCurrency(value) {
   return `${Math.round(value).toLocaleString("ko-KR")} 원`;
+}
+
+function formatNumber(value) {
+  return Math.round(value).toLocaleString("ko-KR");
 }
 
 function formatPercent(value, digits = 4) {
@@ -139,8 +125,16 @@ function floorToThousand(value) {
 }
 
 function setText(id, value) {
-  const node = $(id);
-  if (node) node.textContent = value;
+  const el = $(id);
+  if (el) el.textContent = value;
+}
+
+function getSelectedTradeLabel(value) {
+  return TRADE_MAP[toNumber(value)] || "";
+}
+
+function getSelectedCategoryLabel(value) {
+  return CATEGORY_MAP[toNumber(value)] || "";
 }
 
 function showScreen(screenName) {
@@ -169,125 +163,46 @@ function bindTabs() {
   });
 }
 
-function createSelect(options, selectedValue, onChange) {
-  const select = document.createElement("select");
-  options.forEach((optionText) => {
-    const option = document.createElement("option");
-    option.value = optionText;
-    option.textContent = optionText || "선택";
-    if (optionText === selectedValue) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-  select.addEventListener("change", onChange);
-  return select;
+function itemExpenseTotal(item) {
+  return toNumber(item.machineDomestic) + toNumber(item.machineForeign) + toNumber(item.misc);
 }
 
-function createInput(value, type, onChange) {
-  const input = document.createElement("input");
-  input.type = type;
-  input.value = value ?? "";
-  input.addEventListener("input", onChange);
-  return input;
+function itemMaterialTotal(item) {
+  return toNumber(item.mine) + toNumber(item.manufacture) + toNumber(item.utility) + toNumber(item.agri);
 }
 
-function getTradeOptions() {
-  return ["", "건축", "토목", "기계", "기계설비", "전기", "통신", "소방", "조경"];
+function itemStdTotal(item) {
+  return toNumber(item.g1) + toNumber(item.g2) + toNumber(item.g3) + toNumber(item.g4) + toNumber(item.g5);
 }
 
-function getCategoryOptions() {
-  return [
-    "",
-    "기존비목(K0)",
-    "신규비목(K1)",
-    "신규비목(K2)",
-    "신규비목(K3)",
-    "신규비목(K4)",
-    "신규비목(K5)",
-    "신규비목(K6)",
-    "신규비목(K7)"
-  ];
+function itemCheckTotal(item) {
+  return toNumber(item.labor) + itemExpenseTotal(item) + itemMaterialTotal(item) + itemStdTotal(item);
 }
 
-function renderItemsTable() {
-  const tbody = $("itemsBody");
-  tbody.innerHTML = "";
+function nextCode(prefix = "A") {
+  const used = state.items
+    .map(item => item.code || "")
+    .filter(code => code.startsWith(`${prefix}-`))
+    .map(code => Number(code.split("-")[1]))
+    .filter(num => Number.isFinite(num));
 
-  state.items.forEach((item, index) => {
-    const tr = document.createElement("tr");
-
-    const configs = [
-      { key: "code", type: "text" },
-      { key: "trade", type: "select", options: getTradeOptions() },
-      { key: "category", type: "select", options: getCategoryOptions() },
-      { key: "name", type: "text" },
-      { key: "spec", type: "text" },
-      { key: "unit", type: "text" },
-      { key: "total", type: "number" },
-      { key: "labor", type: "number" },
-      { key: "machineDomestic", type: "number" },
-      { key: "machineForeign", type: "number" },
-      { key: "misc", type: "number" },
-      { key: "mine", type: "number" },
-      { key: "manufacture", type: "number" },
-      { key: "utility", type: "number" },
-      { key: "agri", type: "number" },
-      { key: "g1", type: "number" },
-      { key: "g2", type: "number" },
-      { key: "g3", type: "number" },
-      { key: "g4", type: "number" },
-      { key: "g5", type: "number" },
-      { key: "note", type: "text" }
-    ];
-
-    configs.forEach((config) => {
-      const td = document.createElement("td");
-
-      if (config.type === "select") {
-        td.appendChild(
-          createSelect(config.options, item[config.key], (e) => {
-            state.items[index][config.key] = e.target.value;
-            renderAll();
-          })
-        );
-      } else {
-        td.appendChild(
-          createInput(item[config.key], config.type, (e) => {
-            state.items[index][config.key] = config.type === "number" ? toNumber(e.target.value) : e.target.value;
-            renderAll();
-          })
-        );
-      }
-
-      tr.appendChild(td);
-    });
-
-    const removeTd = document.createElement("td");
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "remove-btn";
-    removeBtn.textContent = "삭제";
-    removeBtn.addEventListener("click", () => {
-      state.items.splice(index, 1);
-      renderItemsTable();
-      renderAll();
-    });
-    removeTd.appendChild(removeBtn);
-    tr.appendChild(removeTd);
-
-    tbody.appendChild(tr);
-  });
+  const maxNum = used.length ? Math.max(...used) : 0;
+  return `${prefix}-${String(maxNum + 1).padStart(3, "0")}`;
 }
 
-function addItemRow() {
-  state.items.push({
-    code: "",
-    trade: "",
-    category: "",
+function createEmptyItem() {
+  const prefix = $("codePrefix").value.trim() || "A";
+  const selectedTrade = getSelectedTradeLabel($("selectedTrade").value);
+  const selectedCategory = getSelectedCategoryLabel($("selectedCategory").value);
+
+  return {
+    id: cryptoRandom(),
+    code: nextCode(prefix),
+    trade: selectedTrade || "건축",
+    category: selectedCategory || "기존비목(K0)",
     name: "",
     spec: "",
-    unit: "",
+    unit: "식",
     total: 0,
     labor: 0,
     machineDomestic: 0,
@@ -302,28 +217,283 @@ function addItemRow() {
     g3: 0,
     g4: 0,
     g5: 0,
-    note: ""
+    note: "",
+    checked: false
+  };
+}
+
+function filteredItemsForWork() {
+  const search = $("itemSearch").value.trim().toLowerCase();
+  const selectedTrade = getSelectedTradeLabel($("selectedTrade").value);
+  const selectedCategory = getSelectedCategoryLabel($("selectedCategory").value);
+
+  return state.items.filter((item) => {
+    const tradeMatch = !selectedTrade || item.trade === selectedTrade;
+    const categoryMatch = !selectedCategory || item.category === selectedCategory;
+    const searchMatch = !search
+      || (item.code || "").toLowerCase().includes(search)
+      || (item.name || "").toLowerCase().includes(search)
+      || (item.spec || "").toLowerCase().includes(search);
+
+    return tradeMatch && categoryMatch && searchMatch;
   });
-  renderItemsTable();
 }
 
-function getSelectedTradeLabel(value) {
-  return TRADE_MAP[toNumber(value)] || "";
+function ensureSelectedItem() {
+  if (!state.selectedItemId && state.items.length) {
+    state.selectedItemId = state.items[0].id;
+  }
+  if (state.selectedItemId && !state.items.find(item => item.id === state.selectedItemId)) {
+    state.selectedItemId = state.items[0]?.id || null;
+  }
 }
 
-function getSelectedCategoryLabel(value) {
-  return CATEGORY_MAP[toNumber(value)] || "";
+function populateSelect(selectId, options) {
+  const select = $(selectId);
+  select.innerHTML = "";
+  options.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value || "선택";
+    select.appendChild(option);
+  });
+}
+
+function syncDetailForm() {
+  ensureSelectedItem();
+  const item = state.items.find(v => v.id === state.selectedItemId);
+
+  if (!item) {
+    $("detailEmpty").classList.remove("hidden");
+    $("detailForm").classList.add("hidden");
+    setText("selectedRowLabel", "선택 없음");
+    return;
+  }
+
+  $("detailEmpty").classList.add("hidden");
+  $("detailForm").classList.remove("hidden");
+  setText("selectedRowLabel", `${item.code || "-"} / ${item.name || "미입력"}`);
+
+  DETAIL_FIELDS.forEach((field) => {
+    const el = $(`d_${field}`);
+    if (!el) return;
+    el.value = item[field] ?? "";
+  });
+
+  renderDetailSummary(item);
+}
+
+function renderDetailSummary(item) {
+  setText("detailExpenseTotal", formatNumber(itemExpenseTotal(item)));
+  setText("detailMaterialTotal", formatNumber(itemMaterialTotal(item)));
+  setText("detailStdTotal", formatNumber(itemStdTotal(item)));
+  setText("detailCheckTotal", formatNumber(itemCheckTotal(item)));
+}
+
+function renderCodeList() {
+  ensureSelectedItem();
+  const list = $("codeList");
+  const items = filteredItemsForWork();
+
+  setText("itemCountLabel", `${items.length}건`);
+
+  if (!items.length) {
+    list.innerHTML = `<div class="detail-empty">조건에 맞는 항목이 없습니다.</div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((item) => `
+    <div class="code-item ${item.id === state.selectedItemId ? "active" : ""}" data-id="${item.id}">
+      <div class="code-item-top">
+        <div class="code-main">${item.code || "-"}</div>
+        <input class="code-check" type="checkbox" data-check-id="${item.id}" ${item.checked ? "checked" : ""} />
+      </div>
+      <div class="code-sub">
+        ${item.trade || "-"} / ${item.category || "-"}<br />
+        ${item.name || "공종명 미입력"}<br />
+        합계 ${formatNumber(item.total)}
+      </div>
+    </div>
+  `).join("");
+
+  list.querySelectorAll(".code-item").forEach((node) => {
+    node.addEventListener("click", (e) => {
+      if (e.target.classList.contains("code-check")) return;
+      state.selectedItemId = node.dataset.id;
+      renderEstimateWorkspace();
+    });
+  });
+
+  list.querySelectorAll(".code-check").forEach((checkbox) => {
+    checkbox.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = state.items.find(v => v.id === checkbox.dataset.checkId);
+      if (!item) return;
+      item.checked = checkbox.checked;
+    });
+  });
+}
+
+function renderMiniGrid() {
+  const body = $("miniGridBody");
+  const items = filteredItemsForWork();
+
+  if (!items.length) {
+    body.innerHTML = `<tr><td colspan="12">조건에 맞는 항목이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = items.map((item) => `
+    <tr>
+      <td><input type="checkbox" data-mini-check="${item.id}" ${item.checked ? "checked" : ""}></td>
+      <td>${item.code || "-"}</td>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatNumber(item.total)}</td>
+      <td>${formatNumber(item.labor)}</td>
+      <td>${formatNumber(itemExpenseTotal(item))}</td>
+      <td>${formatNumber(itemMaterialTotal(item))}</td>
+      <td>${formatNumber(itemStdTotal(item))}</td>
+    </tr>
+  `).join("");
+
+  body.querySelectorAll("[data-mini-check]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      const item = state.items.find(v => v.id === checkbox.dataset.miniCheck);
+      if (!item) return;
+      item.checked = checkbox.checked;
+      renderCodeList();
+    });
+  });
+}
+
+function renderEstimateWorkspace() {
+  renderCodeList();
+  syncDetailForm();
+  renderMiniGrid();
+}
+
+function bindDetailFormEvents() {
+  populateSelect("d_trade", TRADE_OPTIONS);
+  populateSelect("d_category", CATEGORY_OPTIONS);
+
+  DETAIL_FIELDS.forEach((field) => {
+    const el = $(`d_${field}`);
+    if (!el) return;
+
+    const isNumber = [
+      "total","labor","machineDomestic","machineForeign","misc","mine",
+      "manufacture","utility","agri","g1","g2","g3","g4","g5"
+    ].includes(field);
+
+    el.addEventListener("input", () => {
+      const item = state.items.find(v => v.id === state.selectedItemId);
+      if (!item) return;
+
+      item[field] = isNumber ? toNumber(el.value) : el.value;
+      renderEstimateWorkspace();
+      renderAllReportsOnly();
+    });
+
+    el.addEventListener("change", () => {
+      const item = state.items.find(v => v.id === state.selectedItemId);
+      if (!item) return;
+
+      item[field] = isNumber ? toNumber(el.value) : el.value;
+      renderEstimateWorkspace();
+      renderAllReportsOnly();
+    });
+  });
+}
+
+function addItem() {
+  const item = createEmptyItem();
+  state.items.push(item);
+  state.selectedItemId = item.id;
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
+function duplicateSelectedItem() {
+  const item = state.items.find(v => v.id === state.selectedItemId);
+  if (!item) {
+    alert("복제할 항목을 선택하세요.");
+    return;
+  }
+
+  const prefix = $("codePrefix").value.trim() || "A";
+  const clone = {
+    ...structuredClone(item),
+    id: cryptoRandom(),
+    code: nextCode(prefix),
+    checked: false
+  };
+
+  state.items.push(clone);
+  state.selectedItemId = clone.id;
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
+function deleteCheckedItems() {
+  const checked = state.items.filter(item => item.checked);
+  if (!checked.length) {
+    alert("삭제할 항목을 체크하세요.");
+    return;
+  }
+
+  if (!confirm(`${checked.length}개 항목을 삭제하시겠습니까?`)) return;
+
+  state.items = state.items.filter(item => !item.checked);
+  state.selectedItemId = state.items[0]?.id || null;
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
+function generateCodeForSelected() {
+  const item = state.items.find(v => v.id === state.selectedItemId);
+  if (!item) {
+    alert("코드를 생성할 항목을 선택하세요.");
+    return;
+  }
+
+  const prefix = $("codePrefix").value.trim() || "A";
+  item.code = nextCode(prefix);
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
+function saveItemsOnly() {
+  localStorage.setItem("esc_items_only_v1", JSON.stringify(state.items));
+  alert("내역서를 저장했습니다.");
+}
+
+function loadItemsOnly() {
+  const raw = localStorage.getItem("esc_items_only_v1");
+  if (!raw) {
+    alert("저장된 내역서가 없습니다.");
+    return;
+  }
+
+  state.items = JSON.parse(raw);
+  state.selectedItemId = state.items[0]?.id || null;
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+  alert("내역서를 불러왔습니다.");
 }
 
 function buildTitle(baseTitle, tradeNumber, categoryNumber) {
   const tradeLabel = getSelectedTradeLabel(tradeNumber);
   const categoryLabel = getSelectedCategoryLabel(categoryNumber);
-  const tradeIsAll = toNumber(tradeNumber) === 1;
-  const categoryIsAll = toNumber(categoryNumber) === 1;
+  const tradeAll = toNumber(tradeNumber) === 1;
+  const categoryAll = toNumber(categoryNumber) === 1;
 
-  if (tradeIsAll && categoryIsAll) return `【 ${baseTitle} 】`;
-  if (tradeIsAll && !categoryIsAll) return `【 ${baseTitle} - ${categoryLabel} 】`;
-  if (!tradeIsAll && categoryIsAll) return `【 ${baseTitle} - ${tradeLabel} 】`;
+  if (tradeAll && categoryAll) return `【 ${baseTitle} 】`;
+  if (tradeAll && !categoryAll) return `【 ${baseTitle} - ${categoryLabel} 】`;
+  if (!tradeAll && categoryAll) return `【 ${baseTitle} - ${tradeLabel} 】`;
   return `【 ${baseTitle} - ${tradeLabel} ${categoryLabel} 】`;
 }
 
@@ -339,8 +509,6 @@ function collectData() {
   data.directLaborAmount = toNumber(data.directLaborAmount);
   data.advanceDeduction = toNumber(data.advanceDeduction);
   data.etcDeduction = toNumber(data.etcDeduction);
-  data.plannedProgress = toNumber(data.plannedProgress);
-  data.actualProgress = toNumber(data.actualProgress);
 
   data.k0Amount = toNumber(data.k0Amount);
   data.k1Amount = toNumber(data.k1Amount);
@@ -357,12 +525,10 @@ function collectData() {
     : (data.prevAdjustDate || data.contractDate);
 
   data.elapsedDays = diffDays(data.baseDateForElapsed, data.adjustDate);
-
   data.excludedAmount = data.excludedAmount1 + data.directLaborAmount;
   data.applicableAmount = Math.max(data.contractAmount - data.excludedAmount, 0);
 
   data.totalKBase = data.k0Amount + data.k1Amount + data.k2Amount + data.k3Amount || 1;
-
   data.k0Weight = data.k0Amount / data.totalKBase;
   data.k1Weight = data.k1Amount / data.totalKBase;
   data.k2Weight = data.k2Amount / data.totalKBase;
@@ -389,33 +555,16 @@ function collectData() {
   data.attach9Title = buildTitle("물가변동 적용대가의 비목군 분류 일위대가표", data.selectedTrade, data.selectedCategory);
   data.attach10Title = buildTitle("물가변동 적용대가의 비목군 분류 산출근거", data.selectedTrade, data.selectedCategory);
 
+  const selectedTrade = getSelectedTradeLabel(data.selectedTrade);
+  const selectedCategory = getSelectedCategoryLabel(data.selectedCategory);
+
   data.filteredItems = state.items.filter((item) => {
-    const selectedTradeLabel = getSelectedTradeLabel(data.selectedTrade);
-    const selectedCategoryLabel = getSelectedCategoryLabel(data.selectedCategory);
-
-    const tradeMatch = toNumber(data.selectedTrade) === 1 ? true : item.trade === selectedTradeLabel;
-    const categoryMatch = toNumber(data.selectedCategory) === 1 ? true : item.category === selectedCategoryLabel;
-
+    const tradeMatch = !selectedTrade || item.trade === selectedTrade;
+    const categoryMatch = !selectedCategory || item.category === selectedCategory;
     return tradeMatch && categoryMatch;
   });
 
   return data;
-}
-
-function itemExpenseTotal(item) {
-  return toNumber(item.machineDomestic) + toNumber(item.machineForeign) + toNumber(item.misc);
-}
-
-function itemMaterialTotal(item) {
-  return toNumber(item.mine) + toNumber(item.manufacture) + toNumber(item.utility) + toNumber(item.agri);
-}
-
-function itemStdTotal(item) {
-  return toNumber(item.g1) + toNumber(item.g2) + toNumber(item.g3) + toNumber(item.g4) + toNumber(item.g5);
-}
-
-function itemCheckSum(item) {
-  return toNumber(item.labor) + itemExpenseTotal(item) + itemMaterialTotal(item) + itemStdTotal(item);
 }
 
 function renderSummary(data) {
@@ -441,10 +590,7 @@ function renderCover(data) {
 
 function renderSubmitPage(data) {
   setText("submitRecipient", `${data.contractor} 귀중`);
-  setText(
-    "submitText",
-    `${data.contractName}에 대하여 기준시점 및 비교시점 자료, 지수조정율 산정값, 물가변동 적용대가를 검토한 결과를 아래와 같이 제출합니다.`
-  );
+  setText("submitText", `${data.contractName}에 대하여 기준시점 및 비교시점 자료, 지수조정율 산정값, 물가변동 적용대가를 검토한 결과를 아래와 같이 제출합니다.`);
   setText("submitAmountTitle", `물가변동으로 인한 계약금액 조정 ( 제 ${data.escRound}회 ESC )`);
   setText("submitAmountValue", `일금 ${formatCurrency(data.finalAdjustAmount)} (￦ ${Math.round(data.finalAdjustAmount).toLocaleString("ko-KR")})`);
   setText("submitDate", formatMonth(data.reportDate));
@@ -542,30 +688,23 @@ function renderAttach9And10(data) {
     return;
   }
 
-  body9.innerHTML = data.filteredItems.map((item) => {
-    const expenseTotal = itemExpenseTotal(item);
-    const materialTotal = itemMaterialTotal(item);
-    const stdTotal = itemStdTotal(item);
-    const checkTotal = itemCheckSum(item);
-
-    return `
-      <tr>
-        <td>${item.code || "-"}</td>
-        <td>${item.trade || "-"}</td>
-        <td>${item.category || "-"}</td>
-        <td>${item.name || "-"}</td>
-        <td>${item.spec || "-"}</td>
-        <td>${item.unit || "-"}</td>
-        <td>${formatCurrency(item.total)}</td>
-        <td>${formatCurrency(item.labor)}</td>
-        <td>${formatCurrency(expenseTotal)}</td>
-        <td>${formatCurrency(materialTotal)}</td>
-        <td>${formatCurrency(stdTotal)}</td>
-        <td>${formatCurrency(checkTotal)}</td>
-        <td>${item.note || "-"}</td>
-      </tr>
-    `;
-  }).join("");
+  body9.innerHTML = data.filteredItems.map((item) => `
+    <tr>
+      <td>${item.code || "-"}</td>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(itemExpenseTotal(item))}</td>
+      <td>${formatCurrency(itemMaterialTotal(item))}</td>
+      <td>${formatCurrency(itemStdTotal(item))}</td>
+      <td>${formatCurrency(itemCheckTotal(item))}</td>
+      <td>${item.note || "-"}</td>
+    </tr>
+  `).join("");
 
   body10.innerHTML = data.filteredItems.map((item) => `
     <tr>
@@ -594,7 +733,7 @@ function renderAttach9And10(data) {
   `).join("");
 }
 
-function renderAll() {
+function renderAllReportsOnly() {
   const data = collectData();
   renderSummary(data);
   renderCover(data);
@@ -606,22 +745,29 @@ function renderAll() {
   renderAttach9And10(data);
 }
 
+function renderAll() {
+  renderEstimateWorkspace();
+  renderAllReportsOnly();
+}
+
 function saveDraft() {
   const saved = {};
   INPUT_IDS.forEach((id) => {
-    saved[id] = $(id).value;
+    const el = $(id);
+    if (el) saved[id] = el.value;
   });
 
-  localStorage.setItem("esc_report_form_v3", JSON.stringify({
+  localStorage.setItem("esc_report_form_v4", JSON.stringify({
     fields: saved,
-    items: state.items
+    items: state.items,
+    selectedItemId: state.selectedItemId
   }));
 
   alert("입력값을 저장했습니다.");
 }
 
 function loadDraft() {
-  const raw = localStorage.getItem("esc_report_form_v3");
+  const raw = localStorage.getItem("esc_report_form_v4");
   if (!raw) {
     alert("저장된 입력값이 없습니다.");
     return;
@@ -639,22 +785,58 @@ function loadDraft() {
     state.items = parsed.items;
   }
 
-  renderItemsTable();
+  state.selectedItemId = parsed.selectedItemId || state.items[0]?.id || null;
   renderAll();
   alert("입력값을 불러왔습니다.");
 }
 
-function bindInputEvents() {
+function bindGeneralInputEvents() {
   document.querySelectorAll("input, select").forEach((node) => {
-    node.addEventListener("input", renderAll);
+    if ((node.id || "").startsWith("d_")) return;
+    node.addEventListener("input", renderAllReportsOnly);
     node.addEventListener("change", renderAll);
   });
 }
 
-$("addItemBtn").addEventListener("click", () => {
-  addItemRow();
-  renderAll();
-});
+function bindDetailFormEvents() {
+  populateSelect("d_trade", TRADE_OPTIONS);
+  populateSelect("d_category", CATEGORY_OPTIONS);
+
+  DETAIL_FIELDS.forEach((field) => {
+    const el = $(`d_${field}`);
+    if (!el) return;
+
+    const numberFields = [
+      "total","labor","machineDomestic","machineForeign","misc","mine",
+      "manufacture","utility","agri","g1","g2","g3","g4","g5"
+    ];
+
+    const isNumber = numberFields.includes(field);
+
+    el.addEventListener("input", () => {
+      const item = state.items.find(v => v.id === state.selectedItemId);
+      if (!item) return;
+      item[field] = isNumber ? toNumber(el.value) : el.value;
+      renderEstimateWorkspace();
+      renderAllReportsOnly();
+    });
+
+    el.addEventListener("change", () => {
+      const item = state.items.find(v => v.id === state.selectedItemId);
+      if (!item) return;
+      item[field] = isNumber ? toNumber(el.value) : el.value;
+      renderEstimateWorkspace();
+      renderAllReportsOnly();
+    });
+  });
+}
+
+$("addItemBtn").addEventListener("click", addItem);
+$("duplicateItemBtn").addEventListener("click", duplicateSelectedItem);
+$("deleteSelectedBtn").addEventListener("click", deleteCheckedItems);
+$("generateCodeBtn").addEventListener("click", generateCodeForSelected);
+$("saveItemsBtn").addEventListener("click", saveItemsOnly);
+$("loadItemsBtn").addEventListener("click", loadItemsOnly);
 
 $("nextBtn").addEventListener("click", () => {
   renderAll();
@@ -676,7 +858,7 @@ $("printBtn").addEventListener("click", () => {
 });
 
 bindTabs();
-renderItemsTable();
-bindInputEvents();
+bindGeneralInputEvents();
+bindDetailFormEvents();
 renderAll();
 showScreen("input");
