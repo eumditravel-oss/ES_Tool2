@@ -297,7 +297,6 @@ body {
   color: #162033;
 }
 
-/* estimate */
 .estimate-head p {
   margin: 6px 0 0;
   color: #667085;
@@ -757,6 +756,15 @@ body {
 .total-row td {
   background: #f8fbff;
   font-weight: 800;
+}
+
+.judge-lines {
+  margin-bottom: 12px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #42526b;
 }
 
 .report-wrap { max-height: none; }
