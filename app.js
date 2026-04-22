@@ -60,9 +60,9 @@ const state = {
 };
 
 const INPUT_IDS = [
-  "escRound","reportDate","demandOrg","contractName","contractor","contractMethod",
-  "techDept","managerName","managerTitle","managerPhone","contractAmount",
-  "excludedAmount1","directLaborAmount","advanceDeduction","etcDeduction",
+  "escRound","reportDate","demandOrg","contractName","contractor","contractMethod","orderType",
+  "techDept","managerName","managerTitle","managerPhone","contractAmount","excludedAmount1",
+  "directLaborAmount","advanceDeduction","etcDeduction","safetyRate","employmentGrade",
   "plannedProgress","actualProgress","bidDate","contractDate","adjustDate","prevAdjustDate",
   "baseLaborIndex","compareLaborIndex","baseMineIndex","compareMineIndex",
   "baseManufactureIndex","compareManufactureIndex","baseUtilityIndex","compareUtilityIndex",
@@ -259,6 +259,22 @@ function populateSelect(selectId, options) {
   });
 }
 
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function buildSelectHTML(id, field, options, selected) {
+  return `
+    <select data-field="${field}" data-id="${id}">
+      ${options.map(option => `<option value="${escapeAttr(option)}" ${option === selected ? "selected" : ""}>${option || "선택"}</option>`).join("")}
+    </select>
+  `;
+}
+
 function renderCodeList() {
   ensureSelectedItem();
   const list = $("codeList");
@@ -319,7 +335,7 @@ function renderWorkGrid() {
   body.innerHTML = items.map((item) => `
     <tr class="${item.id === state.selectedItemId ? "active-row" : ""}" data-row-id="${item.id}">
       <td><input type="checkbox" class="grid-checkbox" data-check-id="${item.id}" ${item.checked ? "checked" : ""}></td>
-      <td><input type="text" data-field="code" data-id="${item.id}" value="${escapeAttr(item.code)}"></td></td>
+      <td><input type="text" data-field="code" data-id="${item.id}" value="${escapeAttr(item.code)}"></td>
       <td>${buildSelectHTML(item.id, "trade", TRADE_OPTIONS, item.trade)}</td>
       <td>${buildSelectHTML(item.id, "category", CATEGORY_OPTIONS, item.category)}</td>
       <td><input type="text" data-field="name" data-id="${item.id}" value="${escapeAttr(item.name)}"></td>
@@ -384,14 +400,6 @@ function renderWorkGrid() {
     input.addEventListener("input", handler);
     input.addEventListener("change", handler);
   });
-}
-
-function buildSelectHTML(id, field, options, selected) {
-  return `
-    <select data-field="${field}" data-id="${id}">
-      ${options.map(option => `<option value="${escapeAttr(option)}" ${option === selected ? "selected" : ""}>${option || "선택"}</option>`).join("")}
-    </select>
-  `;
 }
 
 function renderMiniGrid() {
@@ -470,7 +478,6 @@ function bindDetailFormEvents() {
     el.addEventListener("input", () => {
       const item = state.items.find(v => v.id === state.selectedItemId);
       if (!item) return;
-
       item[field] = isNumber ? toNumber(el.value) : el.value;
       renderEstimateWorkspace();
       renderAllReportsOnly();
@@ -479,7 +486,6 @@ function bindDetailFormEvents() {
     el.addEventListener("change", () => {
       const item = state.items.find(v => v.id === state.selectedItemId);
       if (!item) return;
-
       item[field] = isNumber ? toNumber(el.value) : el.value;
       renderEstimateWorkspace();
       renderAllReportsOnly();
@@ -498,11 +504,8 @@ function addItem() {
 function insertBelowSelected() {
   const item = createEmptyItem();
   const index = state.items.findIndex(v => v.id === state.selectedItemId);
-  if (index === -1) {
-    state.items.push(item);
-  } else {
-    state.items.splice(index + 1, 0, item);
-  }
+  if (index === -1) state.items.push(item);
+  else state.items.splice(index + 1, 0, item);
   state.selectedItemId = item.id;
   renderEstimateWorkspace();
   renderAllReportsOnly();
@@ -559,12 +562,12 @@ function generateCodeForSelected() {
 }
 
 function saveItemsOnly() {
-  localStorage.setItem("esc_items_only_v2", JSON.stringify(state.items));
+  localStorage.setItem("esc_items_only_v3", JSON.stringify(state.items));
   alert("내역서를 저장했습니다.");
 }
 
 function loadItemsOnly() {
-  const raw = localStorage.getItem("esc_items_only_v2");
+  const raw = localStorage.getItem("esc_items_only_v3");
   if (!raw) {
     alert("저장된 내역서가 없습니다.");
     return;
@@ -589,6 +592,80 @@ function buildTitle(baseTitle, tradeNumber, categoryNumber) {
   return `【 ${baseTitle} - ${tradeLabel} ${categoryLabel} 】`;
 }
 
+function calcPpiIndex(base, compare) {
+  if (!base || !compare) return 100;
+  return Math.floor((compare / base) * 10000) / 100;
+}
+
+function calcRatioIndex(base, compare) {
+  if (!base || !compare) return 100;
+  return Math.floor((compare / base) * 10000) / 100;
+}
+
+function buildAttachment3Rows(data) {
+  const rows = [];
+  const total = data.applicableAmount || 1;
+
+  const directLabor = data.applicableAmount * 0.12;
+  const indirectLabor = data.applicableAmount * 0.05;
+  const machine = data.applicableAmount * 0.06;
+  const mine = data.applicableAmount * 0.08;
+  const manu = data.applicableAmount * 0.12;
+  const utility = data.applicableAmount * 0.03;
+  const agri = data.applicableAmount * 0.01;
+  const std = data.applicableAmount * 0.08;
+  const accident = data.applicableAmount * 0.01;
+  const safety = data.applicableAmount * 0.01;
+  const employment = data.applicableAmount * 0.01;
+  const retirement = data.applicableAmount * 0.01;
+  const health = data.applicableAmount * 0.01;
+  const pension = data.applicableAmount * 0.01;
+  const elder = data.applicableAmount * 0.01;
+
+  const etc = Math.max(
+    data.applicableAmount - (
+      directLabor + indirectLabor + machine + mine + manu + utility + agri +
+      std + accident + safety + employment + retirement + health + pension + elder
+    ),
+    0
+  );
+
+  const laborIndex = calcRatioIndex(data.baseLaborIndex, data.compareLaborIndex);
+  const machineIndex = 100;
+  const mineIndex = calcPpiIndex(data.baseMineIndex, data.compareMineIndex);
+  const manuIndex = calcPpiIndex(data.baseManufactureIndex, data.compareManufactureIndex);
+  const utilityIndex = calcPpiIndex(data.baseUtilityIndex, data.compareUtilityIndex);
+  const agriIndex = calcPpiIndex(data.baseAgriIndex, data.compareAgriIndex);
+  const stdIndex = 100;
+  const etcIndex = 100;
+
+  const rawRows = [
+    ["직접노무비", directLabor, 100, laborIndex],
+    ["간접노무비", indirectLabor, 100, laborIndex],
+    ["기계경비", machine, 100, machineIndex],
+    ["광산품", mine, 100, mineIndex],
+    ["공산품", manu, 100, manuIndex],
+    ["전력수도", utility, 100, utilityIndex],
+    ["농림수산", agri, 100, agriIndex],
+    ["표준시장단가", std, 100, stdIndex],
+    ["산재보험료", accident, 100, laborIndex],
+    ["산업안전보건관리비", safety, 100, laborIndex],
+    ["고용보험료", employment, 100, laborIndex],
+    ["퇴직공제부금비", retirement, 100, laborIndex],
+    ["국민건강보험료", health, 100, laborIndex],
+    ["국민연금보험료", pension, 100, laborIndex],
+    ["노인장기요양보험료", elder, 100, laborIndex],
+    ["기타비목군", etc, 100, etcIndex]
+  ];
+
+  return rawRows.map(([name, amount, baseIndex, compareIndex]) => {
+    const coeff = total ? Math.round((amount / total) * 10000) / 10000 : 0;
+    const changeRatio = baseIndex ? Math.round((compareIndex / baseIndex) * 10000) / 10000 : 1;
+    const adjustCoeff = Math.floor((coeff * changeRatio) * 100000000) / 100000000;
+    return { name, amount, coeff, baseIndex, compareIndex, changeRatio, adjustCoeff };
+  });
+}
+
 function collectData() {
   const data = {};
   INPUT_IDS.forEach((id) => {
@@ -602,6 +679,19 @@ function collectData() {
   data.directLaborAmount = toNumber(data.directLaborAmount);
   data.advanceDeduction = toNumber(data.advanceDeduction);
   data.etcDeduction = toNumber(data.etcDeduction);
+  data.plannedProgress = toNumber(data.plannedProgress);
+  data.actualProgress = toNumber(data.actualProgress);
+
+  data.baseLaborIndex = toNumber(data.baseLaborIndex);
+  data.compareLaborIndex = toNumber(data.compareLaborIndex);
+  data.baseMineIndex = toNumber(data.baseMineIndex);
+  data.compareMineIndex = toNumber(data.compareMineIndex);
+  data.baseManufactureIndex = toNumber(data.baseManufactureIndex);
+  data.compareManufactureIndex = toNumber(data.compareManufactureIndex);
+  data.baseUtilityIndex = toNumber(data.baseUtilityIndex);
+  data.compareUtilityIndex = toNumber(data.compareUtilityIndex);
+  data.baseAgriIndex = toNumber(data.baseAgriIndex);
+  data.compareAgriIndex = toNumber(data.compareAgriIndex);
 
   data.k0Amount = toNumber(data.k0Amount);
   data.k1Amount = toNumber(data.k1Amount);
@@ -622,17 +712,18 @@ function collectData() {
   data.applicableAmount = Math.max(data.contractAmount - data.excludedAmount, 0);
 
   data.totalKBase = data.k0Amount + data.k1Amount + data.k2Amount + data.k3Amount || 1;
-  data.k0Weight = data.k0Amount / data.totalKBase;
-  data.k1Weight = data.k1Amount / data.totalKBase;
-  data.k2Weight = data.k2Amount / data.totalKBase;
-  data.k3Weight = data.k3Amount / data.totalKBase;
 
-  data.k0Weighted = data.k0Weight * (data.k0Rate / 100);
-  data.k1Weighted = data.k1Weight * (data.k1Rate / 100);
-  data.k2Weighted = data.k2Weight * (data.k2Rate / 100);
-  data.k3Weighted = data.k3Weight * (data.k3Rate / 100);
+  data.k0Weight = Math.round((data.k0Amount / data.totalKBase) * 10000) / 10000;
+  data.k1Weight = Math.round((data.k1Amount / data.totalKBase) * 10000) / 10000;
+  data.k2Weight = Math.round((data.k2Amount / data.totalKBase) * 10000) / 10000;
+  data.k3Weight = Math.round((data.k3Amount / data.totalKBase) * 10000) / 10000;
 
-  data.finalKDecimal = data.k0Weighted + data.k1Weighted + data.k2Weighted + data.k3Weighted;
+  data.k0Weighted = Math.floor((data.k0Weight * (data.k0Rate / 100)) * 10000) / 10000;
+  data.k1Weighted = Math.floor((data.k1Weight * (data.k1Rate / 100)) * 10000) / 10000;
+  data.k2Weighted = Math.floor((data.k2Weight * (data.k2Rate / 100)) * 10000) / 10000;
+  data.k3Weighted = Math.floor((data.k3Weight * (data.k3Rate / 100)) * 10000) / 10000;
+
+  data.finalKDecimal = Math.floor((data.k0Weighted + data.k1Weighted + data.k2Weighted + data.k3Weighted) * 10000) / 10000;
   data.finalKPercent = data.finalKDecimal * 100;
 
   data.rawAdjustAmount = floorToThousand(data.applicableAmount * data.finalKDecimal);
@@ -656,6 +747,8 @@ function collectData() {
     const categoryMatch = !selectedCategory || item.category === selectedCategory;
     return tradeMatch && categoryMatch;
   });
+
+  data.attach3Rows = buildAttachment3Rows(data);
 
   return data;
 }
@@ -682,10 +775,10 @@ function renderCover(data) {
 }
 
 function renderSubmitPage(data) {
-  setText("submitRecipient", `${data.contractor} 귀중`);
-  setText("submitText", `${data.contractName}에 대하여 기준시점 및 비교시점 자료, 지수조정율 산정값, 물가변동 적용대가를 검토한 결과를 아래와 같이 제출합니다.`);
-  setText("submitAmountTitle", `물가변동으로 인한 계약금액 조정 ( 제 ${data.escRound}회 ESC )`);
-  setText("submitAmountValue", `일금 ${formatCurrency(data.finalAdjustAmount)} (￦ ${Math.round(data.finalAdjustAmount).toLocaleString("ko-KR")})`);
+  setText("submitRecipient", `${data.contractor}  귀중`);
+  setText("submitText", `본 연구원은 『${data.contractName}』현장에 대하여 「물가변동으로 인한 계약금액 조정보고서」를 완료하여 다음과 같은 결과가 산출되었기에 이를 제출합니다.`);
+  setText("submitAmountTitle", `물가변동으로 인한 계약금액조정 ( 제${data.escRound}회 ESC )`);
+  setText("submitAmountValue", `일금 ${formatCurrency(data.finalAdjustAmount)} ( ￦ ${Math.round(data.finalAdjustAmount).toLocaleString("ko-KR")} )`);
   setText("submitDate", formatMonth(data.reportDate));
 }
 
@@ -724,10 +817,14 @@ function renderAttach1(data) {
 
 function renderAttach2(data) {
   setText("a2ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  setText("a2JudgeLine1", `기간요건 : ${data.elapsedDays}일 (${data.periodPass ? "충족" : "불충족"})`);
+  setText("a2JudgeLine2", `등락요건 : ${data.finalKPercent.toFixed(4)}% (${data.ratePass ? "충족" : "불충족"})`);
   setText("a2B", formatCurrency(data.contractAmount));
   setText("a2C", formatCurrency(data.excludedAmount));
   setText("a2C1", formatCurrency(data.excludedAmount1));
   setText("a2C2", formatCurrency(data.directLaborAmount));
+  setText("a2PlanProgress", formatPercent(data.plannedProgress, 2));
+  setText("a2ActualProgress", formatPercent(data.actualProgress, 2));
   setText("a2D", formatCurrency(data.applicableAmount));
   setText("a2Days", `${data.elapsedDays}일`);
   setText("a2KRate", formatPercent(data.finalKPercent, 4));
@@ -740,6 +837,10 @@ function renderAttach2(data) {
 
 function renderAttach21(data) {
   setText("a21ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  setText("a21K0Label", `기존비목(K0) (${formatDate(data.escRound === 1 ? data.bidDate : (data.prevAdjustDate || data.bidDate))})`);
+  setText("a21K1Label", "신규비목(K1)");
+  setText("a21K2Label", "신규비목(K2)");
+  setText("a21K3Label", "신규비목(K3)");
 
   setText("a21K0Amount", formatCurrency(data.k0Amount));
   setText("a21K1Amount", formatCurrency(data.k1Amount));
@@ -751,19 +852,191 @@ function renderAttach21(data) {
   setText("a21K2Weight", data.k2Weight.toFixed(4));
   setText("a21K3Weight", data.k3Weight.toFixed(4));
 
-  setText("a21K0Rate", formatPercent(data.k0Rate, 4));
-  setText("a21K1Rate", formatPercent(data.k1Rate, 4));
-  setText("a21K2Rate", formatPercent(data.k2Rate, 4));
-  setText("a21K3Rate", formatPercent(data.k3Rate, 4));
+  setText("a21K0Rate", data.k0Rate.toFixed(4));
+  setText("a21K1Rate", data.k1Rate.toFixed(4));
+  setText("a21K2Rate", data.k2Rate.toFixed(4));
+  setText("a21K3Rate", data.k3Rate.toFixed(4));
 
-  setText("a21K0Result", formatPercent(data.k0Weighted * 100, 4));
-  setText("a21K1Result", formatPercent(data.k1Weighted * 100, 4));
-  setText("a21K2Result", formatPercent(data.k2Weighted * 100, 4));
-  setText("a21K3Result", formatPercent(data.k3Weighted * 100, 4));
+  setText("a21K0Result", data.k0Weighted.toFixed(4));
+  setText("a21K1Result", data.k1Weighted.toFixed(4));
+  setText("a21K2Result", data.k2Weighted.toFixed(4));
+  setText("a21K3Result", data.k3Weighted.toFixed(4));
 
   setText("a21TotalAmount", formatCurrency(data.totalKBase));
   setText("a21TotalWeight", (data.k0Weight + data.k1Weight + data.k2Weight + data.k3Weight).toFixed(4));
-  setText("a21FinalK", formatPercent(data.finalKPercent, 4));
+  setText("a21FinalK", data.finalKDecimal.toFixed(4));
+}
+
+function renderAttach3(data) {
+  setText("a3ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const body = $("attach3Body");
+  body.innerHTML = data.attach3Rows.map(row => `
+    <tr>
+      <td>${row.name}</td>
+      <td>${formatCurrency(row.amount)}</td>
+      <td>${row.coeff.toFixed(4)}</td>
+      <td>${row.baseIndex.toFixed(2)}</td>
+      <td>${row.compareIndex.toFixed(2)}</td>
+      <td>${row.changeRatio.toFixed(4)}</td>
+      <td>${row.adjustCoeff.toFixed(8)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderAttach4(data) {
+  setText("a4ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const laborIndex = calcRatioIndex(data.baseLaborIndex, data.compareLaborIndex);
+  const mineIndex = calcPpiIndex(data.baseMineIndex, data.compareMineIndex);
+  const manuIndex = calcPpiIndex(data.baseManufactureIndex, data.compareManufactureIndex);
+  const utilityIndex = calcPpiIndex(data.baseUtilityIndex, data.compareUtilityIndex);
+  const agriIndex = calcPpiIndex(data.baseAgriIndex, data.compareAgriIndex);
+
+  setText("a4LaborBase", formatNumber(data.baseLaborIndex));
+  setText("a4LaborCompare", formatNumber(data.compareLaborIndex));
+  setText("a4LaborIndex", laborIndex.toFixed(2));
+
+  setText("a4MachineBase", "-");
+  setText("a4MachineCompare", "-");
+  setText("a4MachineIndex", "100.00");
+
+  setText("a4MaterialBase", `${data.baseMineIndex} / ${data.baseManufactureIndex} / ${data.baseUtilityIndex} / ${data.baseAgriIndex}`);
+  setText("a4MaterialCompare", `${data.compareMineIndex} / ${data.compareManufactureIndex} / ${data.compareUtilityIndex} / ${data.compareAgriIndex}`);
+  setText("a4MaterialIndex", `${mineIndex.toFixed(2)} / ${manuIndex.toFixed(2)} / ${utilityIndex.toFixed(2)} / ${agriIndex.toFixed(2)}`);
+
+  setText("a4StdBase", "-");
+  setText("a4StdCompare", "-");
+  setText("a4StdIndex", "100.00");
+
+  setText("a4EtcBase", "-");
+  setText("a4EtcCompare", "-");
+  setText("a4EtcIndex", laborIndex.toFixed(2));
+}
+
+function renderAttach5(data) {
+  setText("a5ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  setText("a5Contract", formatCurrency(data.contractAmount));
+  setText("a5Excluded1", formatCurrency(data.excludedAmount1));
+  setText("a5Excluded2", formatCurrency(data.directLaborAmount));
+  setText("a5Applicable", formatCurrency(data.applicableAmount));
+}
+
+function renderAttach6(data) {
+  setText("a6ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const body = $("attach6Body");
+  if (!data.filteredItems.length) {
+    body.innerHTML = `<tr><td colspan="11">조건에 해당하는 내역이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.filteredItems.map(item => `
+    <tr>
+      <td>${item.code || "-"}</td>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(itemExpenseTotal(item))}</td>
+      <td>${formatCurrency(itemMaterialTotal(item))}</td>
+      <td>${formatCurrency(itemStdTotal(item))}</td>
+    </tr>
+  `).join("");
+}
+
+function renderAttach61(data) {
+  setText("a61ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const body = $("attach61Body");
+  if (!data.filteredItems.length) {
+    body.innerHTML = `<tr><td colspan="8">조건에 해당하는 내역이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.filteredItems.map(item => `
+    <tr>
+      <td>${item.code || "-"}</td>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(itemMaterialTotal(item))}</td>
+      <td>${formatCurrency(itemExpenseTotal(item) + itemStdTotal(item))}</td>
+    </tr>
+  `).join("");
+}
+
+function renderAttach62(data) {
+  setText("a62ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const body = $("attach62Body");
+  if (!data.filteredItems.length) {
+    body.innerHTML = `<tr><td colspan="21">조건에 해당하는 내역이 없습니다.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.filteredItems.map(item => `
+    <tr>
+      <td>${item.code || "-"}</td>
+      <td>${item.trade || "-"}</td>
+      <td>${item.category || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.spec || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${formatCurrency(item.total)}</td>
+      <td>${formatCurrency(item.labor)}</td>
+      <td>${formatCurrency(item.machineDomestic)}</td>
+      <td>${formatCurrency(item.machineForeign)}</td>
+      <td>${formatCurrency(item.misc)}</td>
+      <td>${formatCurrency(item.mine)}</td>
+      <td>${formatCurrency(item.manufacture)}</td>
+      <td>${formatCurrency(item.utility)}</td>
+      <td>${formatCurrency(item.agri)}</td>
+      <td>${formatCurrency(item.g1)}</td>
+      <td>${formatCurrency(item.g2)}</td>
+      <td>${formatCurrency(item.g3)}</td>
+      <td>${formatCurrency(item.g4)}</td>
+      <td>${formatCurrency(item.g5)}</td>
+      <td>${item.note || "-"}</td>
+    </tr>
+  `).join("");
+}
+
+function renderAttach7(data) {
+  setText("a7ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const groups = {};
+  data.filteredItems.forEach(item => {
+    const key = item.category || "기타";
+    groups[key] = (groups[key] || 0) + toNumber(item.total);
+  });
+  const body = $("attach7Body");
+  const keys = Object.keys(groups);
+  if (!keys.length) {
+    body.innerHTML = `<tr><td colspan="2">조건에 해당하는 내역이 없습니다.</td></tr>`;
+    return;
+  }
+  body.innerHTML = keys.map(key => `<tr><td>${key}</td><td>${formatCurrency(groups[key])}</td></tr>`).join("");
+}
+
+function renderAttach8(data) {
+  setText("a8ProjectTitle", `◈ 공사명 : ${data.contractName}`);
+  const groups = {};
+  let total = 0;
+  data.filteredItems.forEach(item => {
+    const key = item.trade || "기타";
+    groups[key] = (groups[key] || 0) + toNumber(item.total);
+    total += toNumber(item.total);
+  });
+  const body = $("attach8Body");
+  const keys = Object.keys(groups);
+  if (!keys.length) {
+    body.innerHTML = `<tr><td colspan="3">조건에 해당하는 내역이 없습니다.</td></tr>`;
+    return;
+  }
+  body.innerHTML = keys.map(key => {
+    const share = total ? (groups[key] / total) * 100 : 0;
+    return `<tr><td>${key}</td><td>${formatCurrency(groups[key])}</td><td>${share.toFixed(2)}%</td></tr>`;
+  }).join("");
 }
 
 function renderAttach9And10(data) {
@@ -835,6 +1108,14 @@ function renderAllReportsOnly() {
   renderAttach1(data);
   renderAttach2(data);
   renderAttach21(data);
+  renderAttach3(data);
+  renderAttach4(data);
+  renderAttach5(data);
+  renderAttach6(data);
+  renderAttach61(data);
+  renderAttach62(data);
+  renderAttach7(data);
+  renderAttach8(data);
   renderAttach9And10(data);
 }
 
@@ -850,7 +1131,7 @@ function saveDraft() {
     if (el) saved[id] = el.value;
   });
 
-  localStorage.setItem("esc_report_form_v5", JSON.stringify({
+  localStorage.setItem("esc_report_form_v6", JSON.stringify({
     fields: saved,
     items: state.items,
     selectedItemId: state.selectedItemId
@@ -860,7 +1141,7 @@ function saveDraft() {
 }
 
 function loadDraft() {
-  const raw = localStorage.getItem("esc_report_form_v5");
+  const raw = localStorage.getItem("esc_report_form_v6");
   if (!raw) {
     alert("저장된 입력값이 없습니다.");
     return;
@@ -889,14 +1170,6 @@ function bindGeneralInputEvents() {
     node.addEventListener("input", renderAllReportsOnly);
     node.addEventListener("change", renderAll);
   });
-}
-
-function escapeAttr(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
 }
 
 $("addItemBtn").addEventListener("click", addItem);
